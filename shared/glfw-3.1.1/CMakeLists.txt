@@ -1,3 +1,5 @@
+set(CMAKE_LEGACY_CYGWIN_WIN32 1)
+
 project(GLFW C)
 
 cmake_minimum_required(VERSION 2.8.9)
