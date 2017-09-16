@@ -18,7 +18,7 @@ if not os.isfile("lib/libglfw3.a") then
     os.chdir("shared/glfw-3.1.1")
     os.mkdir("build")
     os.chdir("build")
-    os.execute("cmake - ../ -DOPENGL_gl_LIBRARY=/usr/lib/w32api/libopengl32.a")
+    os.execute("cmake ../")
     os.execute("make")
     os.chdir("../../../")
     os.mkdir("lib")
