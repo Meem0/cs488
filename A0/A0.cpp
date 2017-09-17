@@ -166,6 +166,21 @@ void A0::uploadUniformsToShader()
 
 //----------------------------------------------------------------------------------------
 /*
+ * Resets the triangle
+ */
+void A0::reset()
+{
+	m_shape_color.r = 1.0f;
+	m_shape_color.g = 1.0f;
+	m_shape_color.b = 1.0f;
+	m_shape_translation.x = 0.0f;
+	m_shape_translation.y = 0.0f;
+	m_shape_rotation = 0.0f;
+	m_shape_size = 1.0f;
+}
+
+//----------------------------------------------------------------------------------------
+/*
  * Called once per frame, before guiLogic().
  */
 void A0::appLogic()
@@ -200,6 +215,11 @@ void A0::guiLogic()
 		// Create Button, and check if it was clicked:
 		if( ImGui::Button( "Quit Application" ) ) {
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
+		}
+
+		// Create Button, and check if it was clicked:
+		if( ImGui::Button( "Reset Triangle" ) ) {
+			reset();
 		}
 
 		// Retrieve color components from slider and store in respective elements of
@@ -347,6 +367,11 @@ bool A0::keyInputEvent(int key, int action, int mods) {
 		}
 		if (key == GLFW_KEY_Q) {
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
+
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_R) {
+			reset();
 
 			eventHandled = true;
 		}
