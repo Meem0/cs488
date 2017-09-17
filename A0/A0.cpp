@@ -202,9 +202,11 @@ void A0::guiLogic()
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
 		}
 
-		// Retrieve red color component from slider and store in the first element of
+		// Retrieve color components from slider and store in respective elements of
 		// m_shape_color.
 		ImGui::SliderFloat("Red Channel", &m_shape_color.r, 0.0f, 1.0f);
+		ImGui::SliderFloat("Green Channel", &m_shape_color.g, 0.0f, 1.0f);
+		ImGui::SliderFloat("Blue Channel", &m_shape_color.b, 0.0f, 1.0f);
 
 
 		// Add more gui elements here here ...
@@ -349,7 +351,7 @@ bool A0::keyInputEvent(int key, int action, int mods) {
 		}
 		if (key == GLFW_KEY_Q) {
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
-			
+
 			eventHandled = true;
 		}
 	}
