@@ -1,0 +1,7 @@
+Compilation:
+premake4 gmake
+make
+
+Manual:
+Nothing in particular
+

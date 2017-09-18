@@ -5,7 +5,7 @@
                 "name": "A0",
                 "type": "cppdbg",
                 "request": "launch",
-                "program": "${workspaceRoot}/A0/A0",
+                "program": "${workspaceRoot}/A0",
                 "args": [],
                 "stopAtEntry": false,
                 "cwd": "${workspaceRoot}",
