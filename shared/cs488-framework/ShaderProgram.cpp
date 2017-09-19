@@ -5,6 +5,10 @@
 #include <glm/gtc/type_ptr.hpp>
 using glm::value_ptr;
 
+#if WIN32
+#include <vector>
+#endif
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -186,7 +190,12 @@ void ShaderProgram::checkCompilationStatus (
         glGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &errorMessageLength);
 
         // Retrieve the compilation error message.
+#if WIN32
+        vector<GLchar> errorMessageVec(errorMessageLength + 1);
+        GLchar* errorMessage = errorMessageVec.data();
+#else
         GLchar errorMessage[errorMessageLength + 1]; // Add 1 for null terminator
+#endif
         glGetShaderInfoLog(shaderObject, errorMessageLength, NULL, errorMessage);
 
         string message = "Error Compiling Shader: ";
@@ -219,7 +228,12 @@ void ShaderProgram::checkLinkStatus() {
         glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &errorMessageLength);
 
         // Retrieve the link error message.
+#if WIN32
+        vector<GLchar> errorMessageVec(errorMessageLength);
+        GLchar* errorMessage = errorMessageVec.data();
+#else
         GLchar errorMessage[errorMessageLength];
+#endif
         glGetProgramInfoLog(programObject, errorMessageLength, NULL, errorMessage);
 
         stringstream strStream;
