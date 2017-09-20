@@ -1,5 +1,7 @@
 #pragma once
 
+#define _USE_MATH_DEFINES 1
+
 #include <glm/glm.hpp>
 
 #include "cs488-framework/CS488Window.hpp"
