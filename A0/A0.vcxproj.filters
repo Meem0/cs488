@@ -14,19 +14,19 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="shared">
-      <UniqueIdentifier>{099d3797-7f23-4634-a83e-634d6e5e8ff6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="shared\imgui">
-      <UniqueIdentifier>{91300726-b168-4df4-8ce0-d390305a1ca3}</UniqueIdentifier>
+      <UniqueIdentifier>{50d94d2a-495d-478d-99f3-bfbacb32e10b}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared\cs488-framework">
-      <UniqueIdentifier>{9320a24e-0a0a-4e96-bfa9-6423b163c43c}</UniqueIdentifier>
+      <UniqueIdentifier>{56e2383b-609c-4f4c-95c6-5a28f118c5af}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared\gl3w">
-      <UniqueIdentifier>{b2243bc5-6dbb-4e91-953d-292cac20130b}</UniqueIdentifier>
+      <UniqueIdentifier>{979d8328-5d2c-4971-94e3-4627a2228472}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\imgui">
+      <UniqueIdentifier>{929a67a5-ee0d-40e9-98f4-31e8cdb1bbb9}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared\gl3w\GL">
-      <UniqueIdentifier>{a8b49a4a-fc73-49b7-a663-cfe3cea50b0c}</UniqueIdentifier>
+      <UniqueIdentifier>{28e7770b-3968-4e49-8b27-11de39180f89}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -35,18 +35,6 @@
     </ClCompile>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\imgui\imgui.cpp">
-      <Filter>shared\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\imgui\imgui_demo.cpp">
-      <Filter>shared\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\imgui\imgui_draw.cpp">
-      <Filter>shared\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\imgui\imgui_impl_glfw_gl3.cpp">
-      <Filter>shared\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\cs488-framework\CS488Window.cpp">
       <Filter>shared\cs488-framework</Filter>
@@ -65,6 +53,18 @@
     </ClCompile>
     <ClCompile Include="..\shared\gl3w\GL\gl3w.c">
       <Filter>shared\gl3w\GL</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui_demo.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui_draw.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui_impl_glfw_gl3.cpp">
+      <Filter>shared\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
