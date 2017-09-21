@@ -121,8 +121,9 @@ A1::A1()
 	, m_gridSelectedCol(0)
 	, m_grid(DIM)
 	, m_barCoords(COORDS_ON_GRID, 0)
-	, m_currentColour(0)
 	, m_colours(8)
+	, m_currentColour(0)
+	, m_barColours(BARS_ON_GRID, 0)
 	, m_copyMode(false)
 {
 	float colours[] = {
@@ -460,8 +461,17 @@ void A1::draw()
 
 		// Draw the bars
 		glBindVertexArray(m_bar_vao);
-		glUniform3f(col_uni, 1, 1, 1);
-		glDrawArrays(GL_TRIANGLES, 0, VERTS_PER_BAR * BARS_ON_GRID);
+
+		for (int i = 0; i < BARS_ON_GRID; ++i) {
+			int row = i / DIM;
+			int col = i % DIM;
+			if (m_grid.getHeight(row, col) > 0) {
+				unsigned char colourIndex = m_barColours[i];
+				const auto& colour = m_colours[colourIndex];
+				glUniform3f(col_uni, colour[0], colour[1], colour[2]);
+				glDrawArrays(GL_TRIANGLES, i * VERTS_PER_BAR, VERTS_PER_BAR);
+			}
+		}
 
 		// Highlight the active square.
 		glBindVertexArray(m_highlight_vao);

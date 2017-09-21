@@ -77,5 +77,7 @@ private:
 	std::vector<std::array<float, 3>> m_colours;
 	int m_currentColour;
 
+	std::vector<unsigned char> m_barColours;
+
 	bool m_copyMode;
 };
