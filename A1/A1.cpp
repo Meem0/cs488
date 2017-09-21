@@ -314,11 +314,13 @@ void A1::moveSelectedPosition(int deltaRow, int deltaCol)
 	}
 
 	int previousHeight = m_grid.getHeight(m_gridSelectedRow, m_gridSelectedCol);
+	int previousColour = m_barColours[m_gridSelectedRow * DIM + m_gridSelectedCol];
 
 	setSelectedPosition(row, col);
 
 	if (m_copyMode) {
-		setHeight(row, col, previousHeight);
+		setBarHeight(row, col, previousHeight);
+		m_barColours[row * DIM + col] = previousColour;
 	}
 }
 
@@ -334,10 +336,16 @@ void A1::setSelectedPosition(int row, int col)
 	setGridHighlightPosition(row, col);
 }
 
-void A1::setHeight(int row, int col, int height)
+void A1::setBarHeight(int row, int col, int height)
 {
 	if (height < 0) {
 		return;
+	}
+
+	int previousHeight = m_grid.getHeight(row, col);
+
+	if (previousHeight == 0 && height > 0) {
+		m_barColours[row * DIM + col] = m_currentColour;
 	}
 
 	m_grid.setHeight(row, col, height);
@@ -348,7 +356,12 @@ void A1::setHeight(int row, int col, int height)
 	int offset = startOffset;
 	getGridBarCoordinates(row, col, height, m_barCoords.data(), offset);
 	glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, startOffset * sizeof(float), COORDS_PER_BAR * sizeof(float), m_barCoords.data() + startOffset);
+	glBufferSubData(
+		GL_ARRAY_BUFFER,
+		startOffset * sizeof(float),
+		COORDS_PER_BAR * sizeof(float),
+		m_barCoords.data() + startOffset
+	);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -413,7 +426,9 @@ void A1::guiLogic()
 			ImGui::ColorEdit3("##Colour", m_colours[i].data());
 			ImGui::SameLine();
 			if (ImGui::RadioButton("##Col", &m_currentColour, i)) {
-				// Select this colour.
+				// colour selected -> apply to currently selected bar
+				m_barColours[m_gridSelectedRow * DIM + m_gridSelectedCol] =
+					static_cast<unsigned char>(m_currentColour);
 			}
 			ImGui::PopID();
 		}
@@ -595,12 +610,12 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 		}
 		if (key == GLFW_KEY_SPACE) {
 			int height = m_grid.getHeight(m_gridSelectedRow, m_gridSelectedCol);
-			setHeight(m_gridSelectedRow, m_gridSelectedCol, height + 1);
+			setBarHeight(m_gridSelectedRow, m_gridSelectedCol, height + 1);
 			eventHandled = true;
 		}
 		if (key == GLFW_KEY_BACKSPACE) {
 			int height = m_grid.getHeight(m_gridSelectedRow, m_gridSelectedCol);
-			setHeight(m_gridSelectedRow, m_gridSelectedCol, height - 1);
+			setBarHeight(m_gridSelectedRow, m_gridSelectedCol, height - 1);
 			eventHandled = true;
 		}
 		if (key == GLFW_KEY_R) {

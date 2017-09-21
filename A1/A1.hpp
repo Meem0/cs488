@@ -40,7 +40,7 @@ private:
 
 	void moveSelectedPosition(int deltaRow, int deltaCol);
 	void setSelectedPosition(int row, int col);
-	void setHeight(int row, int col, int height);
+	void setBarHeight(int row, int col, int height);
 	
 	void setGridHighlightPosition(int row, int col);
 
