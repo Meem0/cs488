@@ -125,6 +125,7 @@ A1::A1()
 	, m_currentColour(0)
 	, m_barColours(BARS_ON_GRID, 0)
 	, m_copyMode(false)
+	, m_rotateMode(false)
 {
 	float colours[] = {
 		1.0f, 1.0f, 1.0f,
@@ -463,8 +464,8 @@ void A1::guiLogic()
 void A1::draw()
 {
 	// Create a global transformation for the model (centre it).
-	mat4 W;
-	W = glm::translate( W, vec3( -float(DIM)/2.0f, 0, -float(DIM)/2.0f ) );
+	mat4 W = m_rotationMatrix;
+	W *= glm::translate( W, vec3( -float(DIM)/2.0f, 0, -float(DIM)/2.0f ) );
 
 	m_shader.enable();
 		glEnable( GL_DEPTH_TEST );
@@ -539,6 +540,15 @@ bool A1::mouseMoveEvent(double xPos, double yPos)
 		// Probably need some instance variables to track the current
 		// rotation amount, and maybe the previous X position (so 
 		// that you can rotate relative to the *change* in X.
+		if (m_rotateMode) {
+			double dx = xPos - m_mouseXPos;
+			float angle = static_cast<float>(dx) * 0.003f;
+
+			m_rotationMatrix = glm::rotate(m_rotationMatrix, angle, glm::vec3(0, 1, 0));
+
+			m_mouseXPos = xPos;
+			eventHandled = true;
+		}
 	}
 
 	return eventHandled;
@@ -554,6 +564,13 @@ bool A1::mouseButtonInputEvent(int button, int actions, int mods) {
 	if (!ImGui::IsMouseHoveringAnyWindow()) {
 		// The user clicked in the window.  If it's the left
 		// mouse button, initiate a rotation.
+		if (button == GLFW_MOUSE_BUTTON_1) {
+			m_rotateMode = actions == GLFW_PRESS;
+
+			glfwGetCursorPos(m_window, &m_mouseXPos, nullptr);
+
+			eventHandled = true;
+		}
 	}
 
 	return eventHandled;

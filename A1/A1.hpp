@@ -70,9 +70,10 @@ private:
 	GLuint m_highlight_vao; // Vertex Array Object
 	GLuint m_highlight_vbo; // Vertex Buffer Object
 
-	// Matrices controlling the camera and projection.
+	// Matrices controlling the camera, projection, and rotation
 	glm::mat4 proj;
 	glm::mat4 view;
+	glm::mat4 m_rotationMatrix;
 
 	std::vector<std::array<float, 3>> m_colours;
 	int m_currentColour;
@@ -80,4 +81,6 @@ private:
 	std::vector<unsigned char> m_barColours;
 
 	bool m_copyMode;
+	bool m_rotateMode;
+	double m_mouseXPos;
 };
