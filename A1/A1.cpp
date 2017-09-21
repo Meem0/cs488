@@ -395,13 +395,15 @@ void A1::guiLogic()
 		// Prefixing a widget name with "##" keeps it from being
 		// displayed.
 
-		ImGui::PushID( 0 );
-		ImGui::ColorEdit3( "##Colour", colour );
-		ImGui::SameLine();
-		if( ImGui::RadioButton( "##Col", &currentColour, 0 ) ) {
-			// Select this colour.
+		for (int i = 0; i < 8; ++i) {
+			ImGui::PushID(i);
+			ImGui::ColorEdit3("##Colour", colour);
+			ImGui::SameLine();
+			if (ImGui::RadioButton("##Col", &currentColour, i)) {
+				// Select this colour.
+			}
+			ImGui::PopID();
 		}
-		ImGui::PopID();
 
 /*
 		// For convenience, you can uncomment this to show ImGui's massive
