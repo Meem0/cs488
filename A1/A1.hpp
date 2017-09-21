@@ -3,6 +3,8 @@
 #define _USE_MATH_DEFINES 1
 
 #include <glm/glm.hpp>
+#include <vector>
+#include <array>
 
 #include "cs488-framework/CS488Window.hpp"
 #include "cs488-framework/OpenGLImport.hpp"
@@ -72,8 +74,8 @@ private:
 	glm::mat4 proj;
 	glm::mat4 view;
 
-	float colour[3];
-	int currentColour;
+	std::vector<std::array<float, 3>> m_colours;
+	int m_currentColour;
 
 	bool m_copyMode;
 };

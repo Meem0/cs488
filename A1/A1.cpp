@@ -117,16 +117,30 @@ namespace
 //----------------------------------------------------------------------------------------
 // Constructor
 A1::A1()
-	: currentColour(0)
-	, m_gridSelectedRow(0)
+	: m_gridSelectedRow(0)
 	, m_gridSelectedCol(0)
 	, m_grid(DIM)
 	, m_cubeCoords(new float[COORDS_ON_GRID])
+	, m_currentColour(0)
+	, m_colours(8)
 	, m_copyMode(false)
 {
-	colour[0] = 0.0f;
-	colour[1] = 0.0f;
-	colour[2] = 0.0f;
+	float colours[] = {
+		0, 0, 0,
+		1.0f, 1.0f, 1.0f,
+		0.5f, 0.5f, 0.5f,
+		1.0f, 0, 0,
+		0, 1.0f, 0,
+		0, 0, 1.0f,
+		0.75f, 0.75f, 0,
+		0, 0.75f, 0.75f
+	};
+	for (int i = 0; i < m_colours.size(); ++i) {
+		auto& colour = m_colours[i];
+		colour[0] = colours[i * 3 + 0];
+		colour[1] = colours[i * 3 + 1];
+		colour[2] = colours[i * 3 + 2];
+	}
 }
 
 //----------------------------------------------------------------------------------------
@@ -395,11 +409,11 @@ void A1::guiLogic()
 		// Prefixing a widget name with "##" keeps it from being
 		// displayed.
 
-		for (int i = 0; i < 8; ++i) {
+		for (int i = 0; i < m_colours.size(); ++i) {
 			ImGui::PushID(i);
-			ImGui::ColorEdit3("##Colour", colour);
+			ImGui::ColorEdit3("##Colour", m_colours[i].data());
 			ImGui::SameLine();
-			if (ImGui::RadioButton("##Col", &currentColour, i)) {
+			if (ImGui::RadioButton("##Col", &m_currentColour, i)) {
 				// Select this colour.
 			}
 			ImGui::PopID();
