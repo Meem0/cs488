@@ -34,7 +34,10 @@ private:
 	void initCubes();
 	void initHighlight();
 
+	void reset();
+
 	void setSelectedPosition(int row, int col);
+	void setHeight(int row, int col, int height);
 	
 	void setGridHighlightPosition(int row, int col);
 
@@ -57,6 +60,8 @@ private:
 	// Fields related to cube.
 	GLuint m_cube_vao; // Vertex Array Object
 	GLuint m_cube_vbo; // Vertex Buffer Object
+
+	float* m_cubeCoords;
 
 	// Fields related to grid highlight.
 	GLuint m_highlight_vao; // Vertex Array Object

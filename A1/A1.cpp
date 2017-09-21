@@ -14,6 +14,17 @@ using namespace std;
 
 static const size_t DIM = 16;
 
+const static int COORDS_PER_VERT = 3;
+const static int VERTS_PER_FACE = 6;
+const static int COORDS_PER_FACE = VERTS_PER_FACE * COORDS_PER_VERT;
+
+const static int FACES_PER_BOX = 6;
+const static int VERTS_PER_BOX = VERTS_PER_FACE * FACES_PER_BOX;
+const static int COORDS_PER_BOX = COORDS_PER_FACE * FACES_PER_BOX;
+
+const static int BOXES_ON_GRID = DIM * DIM;
+const static int COORDS_ON_GRID = BOXES_ON_GRID * COORDS_PER_BOX;
+
 namespace
 {
 	enum class Face
@@ -25,14 +36,6 @@ namespace
 		BACK,
 		FRONT,
 	};
-
-	const static int COORDS_PER_VERT = 3;
-	const static int VERTS_PER_FACE = 6;
-	const static int COORDS_PER_FACE = VERTS_PER_FACE * COORDS_PER_VERT;
-
-	const static int FACES_PER_BOX = 6;
-	const static int VERTS_PER_BOX = VERTS_PER_FACE * FACES_PER_BOX;
-	const static int COORDS_PER_BOX = COORDS_PER_FACE * FACES_PER_BOX;
 
 	//----------------------------------------------------------------------------------------
 	/*
@@ -98,9 +101,15 @@ namespace
 	*/
 	void getGridBoxCoordinates(int row, int col, int height, float* arr, int& offset)
 	{
-		for (int i = 0; i < FACES_PER_BOX; ++i) {
-			Face face = static_cast<Face>(i);
-			getGridFaceCoordinates(face, row, col, height, arr, offset);
+		if (height == 0) {
+			std::fill(arr + offset, arr + offset + COORDS_PER_BOX, 0);
+			offset += COORDS_PER_BOX;
+		}
+		else {
+			for (int i = 0; i < FACES_PER_BOX; ++i) {
+				Face face = static_cast<Face>(i);
+				getGridFaceCoordinates(face, row, col, height, arr, offset);
+			}
 		}
 	}
 }
@@ -112,6 +121,7 @@ A1::A1()
 	, m_gridSelectedRow(0)
 	, m_gridSelectedCol(0)
 	, m_grid(DIM)
+	, m_cubeCoords(new float[COORDS_ON_GRID])
 {
 	colour[0] = 0.0f;
 	colour[1] = 0.0f;
@@ -121,7 +131,9 @@ A1::A1()
 //----------------------------------------------------------------------------------------
 // Destructor
 A1::~A1()
-{}
+{
+	delete[] m_cubeCoords;
+}
 
 //----------------------------------------------------------------------------------------
 /*
@@ -130,7 +142,7 @@ A1::~A1()
 void A1::init()
 {
 	// Set the background colour.
-	glClearColor( 0.3, 0.5, 0.7, 1.0 );
+	glClearColor( 0.3f, 0.5f, 0.7f, 1.0f );
 
 	// Build the shader
 	m_shader.generateProgramObject();
@@ -149,6 +161,8 @@ void A1::init()
 	initGrid();
 	initCubes();
 	initHighlight();
+
+	reset();
 
 	// Set up initial view and projection matrices (need to do this here,
 	// since it depends on the GLFW window being set up correctly).
@@ -170,20 +184,20 @@ void A1::initGrid()
 	float verts[sz];
 	size_t ct = 0;
 	for( int idx = 0; idx < DIM+3; ++idx ) {
-		verts[ ct ] = -1;
+		verts[ ct ] = -1.0f;
 		verts[ ct+1 ] = 0;
-		verts[ ct+2 ] = idx-1;
-		verts[ ct+3 ] = DIM+1;
+		verts[ ct+2 ] = static_cast<float>(idx-1);
+		verts[ ct+3 ] = static_cast<float>(DIM+1);
 		verts[ ct+4 ] = 0;
-		verts[ ct+5 ] = idx-1;
+		verts[ ct+5 ] = static_cast<float>(idx-1);
 		ct += 6;
 
-		verts[ ct ] = idx-1;
+		verts[ ct ] = static_cast<float>(idx-1);
 		verts[ ct+1 ] = 0;
-		verts[ ct+2 ] = -1;
-		verts[ ct+3 ] = idx-1;
+		verts[ ct+2 ] = -1.0f;
+		verts[ ct+3 ] = static_cast<float>(idx-1);
 		verts[ ct+4 ] = 0;
-		verts[ ct+5 ] = DIM+1;
+		verts[ ct+5 ] = static_cast<float>(DIM+1);
 		ct += 6;
 	}
 
@@ -214,12 +228,6 @@ void A1::initGrid()
 
 void A1::initCubes()
 {
-	float verts[COORDS_PER_BOX * 3];
-	int offset = 0;
-	getGridBoxCoordinates(3, 8, 1, verts, offset);
-	getGridBoxCoordinates(13, 5, 7, verts, offset);
-	getGridBoxCoordinates(5, 9, 2, verts, offset);
-
 	// Create the vertex array to record buffer assignments.
 	glGenVertexArrays(1, &m_cube_vao);
 	glBindVertexArray(m_cube_vao);
@@ -227,7 +235,7 @@ void A1::initCubes()
 	// Create the cube vertex buffer
 	glGenBuffers(1, &m_cube_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, COORDS_ON_GRID * sizeof(float), m_cubeCoords, GL_DYNAMIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
 	GLint posAttrib = m_shader.getAttribLocation("position");
@@ -269,6 +277,19 @@ void A1::initHighlight()
 	CHECK_GL_ERRORS;
 }
 
+void A1::reset()
+{
+	m_grid.reset();
+
+	setSelectedPosition(0, 0);
+
+	std::fill(m_cubeCoords, m_cubeCoords + COORDS_ON_GRID, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, COORDS_ON_GRID * sizeof(float), m_cubeCoords);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 void A1::setSelectedPosition(int row, int col)
 {
 	if (row < 0 || row >= DIM || col < 0 || col >= DIM) {
@@ -279,6 +300,24 @@ void A1::setSelectedPosition(int row, int col)
 	m_gridSelectedCol = col;
 
 	setGridHighlightPosition(row, col);
+}
+
+void A1::setHeight(int row, int col, int height)
+{
+	if (height < 0) {
+		return;
+	}
+
+	m_grid.setHeight(row, col, height);
+	m_gridSelectedRow = row;
+	m_gridSelectedCol = col;
+
+	int startOffset = COORDS_PER_BOX * (DIM * row + col);
+	int offset = startOffset;
+	getGridBoxCoordinates(row, col, height, m_cubeCoords, offset);
+	glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, startOffset * sizeof(float), COORDS_PER_BOX * sizeof(float), m_cubeCoords + startOffset);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void A1::setGridHighlightPosition(int row, int col)
@@ -389,7 +428,7 @@ void A1::draw()
 		// Draw the cubes
 		glBindVertexArray(m_cube_vao);
 		glUniform3f(col_uni, 1, 1, 1);
-		glDrawArrays(GL_TRIANGLES, 0, VERTS_PER_BOX * 3);
+		glDrawArrays(GL_TRIANGLES, 0, VERTS_PER_BOX * BOXES_ON_GRID);
 
 		// Highlight the active square.
 		glBindVertexArray(m_highlight_vao);
@@ -502,6 +541,24 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 		}
 		if (key == GLFW_KEY_RIGHT) {
 			setSelectedPosition(m_gridSelectedRow, m_gridSelectedCol + 1);
+		}
+		if (key == GLFW_KEY_SPACE) {
+			int height = m_grid.getHeight(m_gridSelectedRow, m_gridSelectedCol);
+			setHeight(m_gridSelectedRow, m_gridSelectedCol, height + 1);
+		}
+		if (key == GLFW_KEY_BACKSPACE) {
+			int height = m_grid.getHeight(m_gridSelectedRow, m_gridSelectedCol);
+			setHeight(m_gridSelectedRow, m_gridSelectedCol, height - 1);
+		}
+		if (key == GLFW_KEY_R) {
+			reset();
+		}
+		if (key == GLFW_KEY_1) {
+			int offset = 0;
+			getGridBoxCoordinates(2, 2, 0, m_cubeCoords, offset);
+			glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, offset * sizeof(float), m_cubeCoords);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 	}
 
