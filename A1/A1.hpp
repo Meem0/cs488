@@ -83,4 +83,5 @@ private:
 	bool m_copyMode;
 	bool m_rotateMode;
 	double m_mouseXPos;
+	float m_scaleAmount;
 };

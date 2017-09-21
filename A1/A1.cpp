@@ -126,6 +126,7 @@ A1::A1()
 	, m_barColours(BARS_ON_GRID, 0)
 	, m_copyMode(false)
 	, m_rotateMode(false)
+	, m_scaleAmount(1.0f)
 {
 	float colours[] = {
 		1.0f, 1.0f, 1.0f,
@@ -465,6 +466,7 @@ void A1::draw()
 {
 	// Create a global transformation for the model (centre it).
 	mat4 W = m_rotationMatrix;
+	W *= glm::scale(W, glm::vec3(m_scaleAmount, m_scaleAmount, m_scaleAmount));
 	W *= glm::translate( W, vec3( -float(DIM)/2.0f, 0, -float(DIM)/2.0f ) );
 
 	m_shader.enable();
@@ -584,6 +586,17 @@ bool A1::mouseScrollEvent(double xOffSet, double yOffSet) {
 	bool eventHandled(false);
 
 	// Zoom in or out.
+	if (yOffSet != 0) {
+		m_scaleAmount += static_cast<float>(yOffSet) * 0.1f;
+		if (m_scaleAmount < 0.5f) {
+			m_scaleAmount = 0.5f;
+		}
+		else if (m_scaleAmount > 2.0f) {
+			m_scaleAmount = 2.0f;
+		}
+
+		eventHandled = true;
+	}
 
 	return eventHandled;
 }
