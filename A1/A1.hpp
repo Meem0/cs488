@@ -36,6 +36,7 @@ private:
 
 	void reset();
 
+	void moveSelectedPosition(int deltaRow, int deltaCol);
 	void setSelectedPosition(int row, int col);
 	void setHeight(int row, int col, int height);
 	
@@ -73,4 +74,6 @@ private:
 
 	float colour[3];
 	int currentColour;
+
+	bool m_copyMode;
 };

@@ -122,6 +122,7 @@ A1::A1()
 	, m_gridSelectedCol(0)
 	, m_grid(DIM)
 	, m_cubeCoords(new float[COORDS_ON_GRID])
+	, m_copyMode(false)
 {
 	colour[0] = 0.0f;
 	colour[1] = 0.0f;
@@ -288,6 +289,24 @@ void A1::reset()
 	glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, COORDS_ON_GRID * sizeof(float), m_cubeCoords);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void A1::moveSelectedPosition(int deltaRow, int deltaCol)
+{
+	int row = m_gridSelectedRow + deltaRow;
+	int col = m_gridSelectedCol + deltaCol;
+
+	if (row < 0 || row >= DIM || col < 0 || col >= DIM) {
+		return;
+	}
+
+	int previousHeight = m_grid.getHeight(m_gridSelectedRow, m_gridSelectedCol);
+
+	setSelectedPosition(row, col);
+
+	if (m_copyMode) {
+		setHeight(row, col, previousHeight);
+	}
 }
 
 void A1::setSelectedPosition(int row, int col)
@@ -531,27 +550,38 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 	// Fill in with event handling code...
 	if( action == GLFW_PRESS ) {
 		if (key == GLFW_KEY_UP) {
-			setSelectedPosition(m_gridSelectedRow - 1, m_gridSelectedCol);
+			moveSelectedPosition(-1, 0);
+			eventHandled = true;
 		}
 		if (key == GLFW_KEY_DOWN) {
-			setSelectedPosition(m_gridSelectedRow + 1, m_gridSelectedCol);
+			moveSelectedPosition(1, 0);
+			eventHandled = true;
 		}
 		if (key == GLFW_KEY_LEFT) {
-			setSelectedPosition(m_gridSelectedRow, m_gridSelectedCol - 1);
+			moveSelectedPosition(0, -1);
+			eventHandled = true;
 		}
 		if (key == GLFW_KEY_RIGHT) {
-			setSelectedPosition(m_gridSelectedRow, m_gridSelectedCol + 1);
+			moveSelectedPosition(0, 1);
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
+			m_copyMode = true;
+			eventHandled = true;
 		}
 		if (key == GLFW_KEY_SPACE) {
 			int height = m_grid.getHeight(m_gridSelectedRow, m_gridSelectedCol);
 			setHeight(m_gridSelectedRow, m_gridSelectedCol, height + 1);
+			eventHandled = true;
 		}
 		if (key == GLFW_KEY_BACKSPACE) {
 			int height = m_grid.getHeight(m_gridSelectedRow, m_gridSelectedCol);
 			setHeight(m_gridSelectedRow, m_gridSelectedCol, height - 1);
+			eventHandled = true;
 		}
 		if (key == GLFW_KEY_R) {
 			reset();
+			eventHandled = true;
 		}
 		if (key == GLFW_KEY_1) {
 			int offset = 0;
@@ -559,6 +589,13 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 			glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, offset * sizeof(float), m_cubeCoords);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			eventHandled = true;
+		}
+	}
+	else if (action == GLFW_RELEASE) {
+		if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
+			m_copyMode = false;
+			eventHandled = true;
 		}
 	}
 
