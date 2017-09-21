@@ -30,40 +30,45 @@ namespace
 	const static int VERTS_PER_FACE = 6;
 	const static int COORDS_PER_FACE = VERTS_PER_FACE * COORDS_PER_VERT;
 
+	const static int FACES_PER_BOX = 6;
+	const static int VERTS_PER_BOX = VERTS_PER_FACE * FACES_PER_BOX;
+	const static int COORDS_PER_BOX = COORDS_PER_FACE * FACES_PER_BOX;
+
 	//----------------------------------------------------------------------------------------
 	/*
-	* Overwrites COORDS_PER_FACE values in arr starting at index offset with the coordinates
-	* composing the specified face of a cube in the grid
+	* Overwrites COORDS_PER_FACE consecutive values in arr starting at index offset
+	* with the coordinates composing the specified face of a cube in the grid
+	* Offset will be at the index after the last value written
 	*/
-	void getGridFaceCoordinates(Face face, int row, int col, int height, float* arr, int offset)
+	void getGridFaceCoordinates(Face face, int row, int col, int height, float* arr, int& offset)
 	{
 		const static float COORDS[] = {
-			0.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f,
-			0.0f, 1.0f, 0.0f,
-			0.0f, 1.0f, 1.0f,
-			1.0f, 0.0f, 0.0f,
-			1.0f, 0.0f, 1.0f,
-			1.0f, 1.0f, 0.0f,
-			1.0f, 1.0f, 1.0f
+			0.0f, 0.0f, 0.0f, // 0: left  bottom back
+			0.0f, 0.0f, 1.0f, // 1: left  bottom front
+			0.0f, 1.0f, 0.0f, // 2: left  top    back
+			0.0f, 1.0f, 1.0f, // 3: left  top    front
+			1.0f, 0.0f, 0.0f, // 4: right bottom back
+			1.0f, 0.0f, 1.0f, // 5: right bottom front
+			1.0f, 1.0f, 0.0f, // 6: right top    back
+			1.0f, 1.0f, 1.0f  // 7: right top    front
 		};
 		const static int BOTTOM_INDICES[] = {
-			0, 4, 1, 1, 4, 5
+			0, 4, 1, 1, 5, 4
 		};
 		const static int TOP_INDICES[] = {
 			2, 3, 6, 6, 3, 7
 		};
 		const static int LEFT_INDICES[] = {
-			0, 4, 2, 2, 4, 3
+			0, 1, 2, 2, 1, 3
 		};
 		const static int RIGHT_INDICES[] = {
-			1, 6, 5, 6, 7, 5
+			4, 6, 5, 5, 6, 7
 		};
 		const static int BACK_INDICES[] = {
-			0, 2, 1, 1, 2, 6
+			0, 2, 4, 4, 2, 6
 		};
 		const static int FRONT_INDICES[] = {
-			4, 3, 5, 5, 3, 7
+			1, 5, 3, 3, 5, 7
 		};
 		const static int* FACE_INDICES[] = {
 			BOTTOM_INDICES,
@@ -74,19 +79,34 @@ namespace
 			FRONT_INDICES
 		};
 
-		int outputIndex = offset;
+		int startOffset = offset;
+
 		const int* indices = FACE_INDICES[static_cast<unsigned int>(face)];
 		for (int i = 0; i < VERTS_PER_FACE; ++i) {
 			int coordsIndex = indices[i] * COORDS_PER_VERT;
 
-			arr[outputIndex + 0] = COORDS[coordsIndex + 0] + col;
-			arr[outputIndex + 1] = COORDS[coordsIndex + 1] + height;
-			arr[outputIndex + 2] = COORDS[coordsIndex + 2] + row;
-			outputIndex += 3;
+			arr[offset + 0] = COORDS[coordsIndex + 0] + col;
+			arr[offset + 1] = COORDS[coordsIndex + 1] * height;
+			arr[offset + 2] = COORDS[coordsIndex + 2] + row;
+			offset += 3;
 		}
 
-		vector<float> debugVector(arr, arr + COORDS_PER_FACE);
-		outputIndex++;
+		vector<float> debugVector(arr + startOffset, arr + offset);
+		int end = 0;
+	}
+
+	//----------------------------------------------------------------------------------------
+	/*
+	* Overwrites COORDS_PER_BOX consecutive values in arr starting at index offset
+	* with the coordinates composing the specified cube in the grid
+	* Offset will be at the index after the last value written
+	*/
+	void getGridBoxCoordinates(int row, int col, int height, float* arr, int& offset)
+	{
+		for (int i = 0; i < FACES_PER_BOX; ++i) {
+			Face face = static_cast<Face>(i);
+			getGridFaceCoordinates(face, row, col, height, arr, offset);
+		}
 	}
 }
 
@@ -199,61 +219,11 @@ void A1::initGrid()
 
 void A1::initCube()
 {
-	float verts[] = {
-		// base
-		0.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f,
-
-		1.0f, 0.0f, 1.0f,
-		1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f,
-
-		// back
-		0.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-
-		1.0f, 1.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-
-		// left
-		0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 1.0f,
-
-		0.0f, 1.0f, 1.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 1.0f,
-
-		// right
-		1.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 0.0f,
-		1.0f, 0.0f, 1.0f,
-
-		1.0f, 1.0f, 1.0f,
-		1.0f, 1.0f, 0.0f,
-		1.0f, 0.0f, 1.0f,
-
-		// front
-		0.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-
-		1.0f, 1.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-
-		// top
-		0.0f, 1.0f, 0.0f,
-		1.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 1.0f,
-
-		1.0f, 1.0f, 1.0f,
-		1.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 1.0f
-	};
+	float verts[COORDS_PER_BOX * 3];
+	int offset = 0;
+	getGridBoxCoordinates(3, 8, 1, verts, offset);
+	getGridBoxCoordinates(13, 5, 7, verts, offset);
+	getGridBoxCoordinates(5, 9, 2, verts, offset);
 
 	// Create the vertex array to record buffer assignments.
 	glGenVertexArrays(1, &m_cube_vao);
@@ -321,10 +291,11 @@ void A1::setGridHighlightPosition(int row, int col)
 	const size_t NUM_COORDS = 4 * COORDS_PER_FACE;
 
 	float verts[NUM_COORDS];
-	getGridFaceCoordinates(Face::BOTTOM, row, -1,  0, verts, 0 * COORDS_PER_FACE);
-	getGridFaceCoordinates(Face::BOTTOM, row, DIM, 0, verts, 1 * COORDS_PER_FACE);
-	getGridFaceCoordinates(Face::BOTTOM, -1,  col, 0, verts, 2 * COORDS_PER_FACE);
-	getGridFaceCoordinates(Face::BOTTOM, DIM, col, 0, verts, 3 * COORDS_PER_FACE);
+	int offset = 0;
+	getGridFaceCoordinates(Face::BOTTOM, row, -1,  0, verts, offset);
+	getGridFaceCoordinates(Face::BOTTOM, row, DIM, 0, verts, offset);
+	getGridFaceCoordinates(Face::BOTTOM, -1,  col, 0, verts, offset);
+	getGridFaceCoordinates(Face::BOTTOM, DIM, col, 0, verts, offset);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_highlight_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);
@@ -423,7 +394,7 @@ void A1::draw()
 		// Draw the cubes
 		glBindVertexArray(m_cube_vao);
 		glUniform3f(col_uni, 1, 1, 1);
-		glDrawArrays(GL_TRIANGLES, 0, 6 * 2 * 3);
+		glDrawArrays(GL_TRIANGLES, 0, VERTS_PER_BOX * 3);
 
 		// Highlight the active square.
 		glBindVertexArray(m_highlight_vao);
