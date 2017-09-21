@@ -64,7 +64,7 @@ private:
 	GLuint m_bar_vao; // Vertex Array Object
 	GLuint m_bar_vbo; // Vertex Buffer Object
 
-	float* m_barCoords;
+	std::vector<float> m_barCoords;
 
 	// Fields related to grid highlight.
 	GLuint m_highlight_vao; // Vertex Array Object

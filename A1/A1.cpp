@@ -120,7 +120,7 @@ A1::A1()
 	: m_gridSelectedRow(0)
 	, m_gridSelectedCol(0)
 	, m_grid(DIM)
-	, m_barCoords(new float[COORDS_ON_GRID])
+	, m_barCoords(COORDS_ON_GRID, 0)
 	, m_currentColour(0)
 	, m_colours(8)
 	, m_copyMode(false)
@@ -146,9 +146,7 @@ A1::A1()
 //----------------------------------------------------------------------------------------
 // Destructor
 A1::~A1()
-{
-	delete[] m_barCoords;
-}
+{}
 
 //----------------------------------------------------------------------------------------
 /*
@@ -250,7 +248,7 @@ void A1::initBars()
 	// Create the bar vertex buffer
 	glGenBuffers(1, &m_bar_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
-	glBufferData(GL_ARRAY_BUFFER, COORDS_ON_GRID * sizeof(float), m_barCoords, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, COORDS_ON_GRID * sizeof(float), m_barCoords.data(), GL_DYNAMIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
 	GLint posAttrib = m_shader.getAttribLocation("position");
@@ -298,10 +296,10 @@ void A1::reset()
 
 	setSelectedPosition(0, 0);
 
-	std::fill(m_barCoords, m_barCoords + COORDS_ON_GRID, 0);
+	std::fill(m_barCoords.begin(), m_barCoords.end(), 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, COORDS_ON_GRID * sizeof(float), m_barCoords);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, COORDS_ON_GRID * sizeof(float), m_barCoords.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -347,9 +345,9 @@ void A1::setHeight(int row, int col, int height)
 
 	int startOffset = COORDS_PER_BAR * (DIM * row + col);
 	int offset = startOffset;
-	getGridBarCoordinates(row, col, height, m_barCoords, offset);
+	getGridBarCoordinates(row, col, height, m_barCoords.data(), offset);
 	glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, startOffset * sizeof(float), COORDS_PER_BAR * sizeof(float), m_barCoords + startOffset);
+	glBufferSubData(GL_ARRAY_BUFFER, startOffset * sizeof(float), COORDS_PER_BAR * sizeof(float), m_barCoords.data() + startOffset);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -597,14 +595,6 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 		}
 		if (key == GLFW_KEY_R) {
 			reset();
-			eventHandled = true;
-		}
-		if (key == GLFW_KEY_1) {
-			int offset = 0;
-			getGridBarCoordinates(2, 2, 0, m_barCoords, offset);
-			glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, offset * sizeof(float), m_barCoords);
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			eventHandled = true;
 		}
 	}
