@@ -14,10 +14,89 @@ using namespace std;
 
 static const size_t DIM = 16;
 
+namespace
+{
+	enum class Face
+	{
+		BOTTOM,
+		TOP,
+		LEFT,
+		RIGHT,
+		BACK,
+		FRONT,
+	};
+
+	const static int COORDS_PER_VERT = 3;
+	const static int VERTS_PER_FACE = 6;
+	const static int COORDS_PER_FACE = VERTS_PER_FACE * COORDS_PER_VERT;
+
+	//----------------------------------------------------------------------------------------
+	/*
+	* Overwrites COORDS_PER_FACE values in arr starting at index offset with the coordinates
+	* composing the specified face of a cube in the grid
+	*/
+	void getGridFaceCoordinates(Face face, int row, int col, int height, float* arr, int offset)
+	{
+		const static float COORDS[] = {
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f,
+			0.0f, 1.0f, 0.0f,
+			0.0f, 1.0f, 1.0f,
+			1.0f, 0.0f, 0.0f,
+			1.0f, 0.0f, 1.0f,
+			1.0f, 1.0f, 0.0f,
+			1.0f, 1.0f, 1.0f
+		};
+		const static int BOTTOM_INDICES[] = {
+			0, 4, 1, 1, 4, 5
+		};
+		const static int TOP_INDICES[] = {
+			2, 3, 6, 6, 3, 7
+		};
+		const static int LEFT_INDICES[] = {
+			0, 4, 2, 2, 4, 3
+		};
+		const static int RIGHT_INDICES[] = {
+			1, 6, 5, 6, 7, 5
+		};
+		const static int BACK_INDICES[] = {
+			0, 2, 1, 1, 2, 6
+		};
+		const static int FRONT_INDICES[] = {
+			4, 3, 5, 5, 3, 7
+		};
+		const static int* FACE_INDICES[] = {
+			BOTTOM_INDICES,
+			TOP_INDICES,
+			LEFT_INDICES,
+			RIGHT_INDICES,
+			BACK_INDICES,
+			FRONT_INDICES
+		};
+
+		int outputIndex = offset;
+		const int* indices = FACE_INDICES[static_cast<unsigned int>(face)];
+		for (int i = 0; i < VERTS_PER_FACE; ++i) {
+			int coordsIndex = indices[i] * COORDS_PER_VERT;
+
+			arr[outputIndex + 0] = COORDS[coordsIndex + 0] + col;
+			arr[outputIndex + 1] = COORDS[coordsIndex + 1] + height;
+			arr[outputIndex + 2] = COORDS[coordsIndex + 2] + row;
+			outputIndex += 3;
+		}
+
+		vector<float> debugVector(arr, arr + COORDS_PER_FACE);
+		outputIndex++;
+	}
+}
+
 //----------------------------------------------------------------------------------------
 // Constructor
 A1::A1()
-	: current_col( 0 )
+	: currentColour(0)
+	, m_gridSelectedRow(0)
+	, m_gridSelectedCol(0)
+	, m_grid(DIM)
 {
 	colour[0] = 0.0f;
 	colour[1] = 0.0f;
@@ -54,6 +133,7 @@ void A1::init()
 
 	initGrid();
 	initCube();
+	initHighlight();
 
 	// Set up initial view and projection matrices (need to do this here,
 	// since it depends on the GLFW window being set up correctly).
@@ -70,9 +150,9 @@ void A1::init()
 
 void A1::initGrid()
 {
-	size_t sz = 3 * 2 * 2 * (DIM+3);
+	const size_t sz = 3 * 2 * 2 * (DIM+3);
 
-	float *verts = new float[ sz ];
+	float verts[sz];
 	size_t ct = 0;
 	for( int idx = 0; idx < DIM+3; ++idx ) {
 		verts[ ct ] = -1;
@@ -112,9 +192,6 @@ void A1::initGrid()
 	glBindVertexArray( 0 );
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
-
-	// OpenGL has the buffer now, there's no need for us to keep a copy.
-	delete [] verts;
 
 	CHECK_GL_ERRORS;
 }
@@ -201,6 +278,59 @@ void A1::initCube()
 	CHECK_GL_ERRORS;
 }
 
+void A1::initHighlight()
+{
+	// Create the vertex array to record buffer assignments.
+	glGenVertexArrays(1, &m_highlight_vao);
+	glBindVertexArray(m_highlight_vao);
+
+	// Create the highlight vertex buffer
+	glGenBuffers(1, &m_highlight_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, m_highlight_vbo);
+
+	// Specify the means of extracting the position values properly.
+	GLint posAttrib = m_shader.getAttribLocation("position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	setGridHighlightPosition(m_gridSelectedRow, m_gridSelectedCol);
+
+	// Reset state to prevent rogue code from messing with *my*
+	// stuff!
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	CHECK_GL_ERRORS;
+}
+
+void A1::setSelectedPosition(int row, int col)
+{
+	if (row < 0 || row >= DIM || col < 0 || col >= DIM) {
+		return;
+	}
+
+	m_gridSelectedRow = row;
+	m_gridSelectedCol = col;
+
+	setGridHighlightPosition(row, col);
+}
+
+void A1::setGridHighlightPosition(int row, int col)
+{
+	const size_t NUM_COORDS = 4 * COORDS_PER_FACE;
+
+	float verts[NUM_COORDS];
+	getGridFaceCoordinates(Face::BOTTOM, row, -1,  0, verts, 0 * COORDS_PER_FACE);
+	getGridFaceCoordinates(Face::BOTTOM, row, DIM, 0, verts, 1 * COORDS_PER_FACE);
+	getGridFaceCoordinates(Face::BOTTOM, -1,  col, 0, verts, 2 * COORDS_PER_FACE);
+	getGridFaceCoordinates(Face::BOTTOM, DIM, col, 0, verts, 3 * COORDS_PER_FACE);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_highlight_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 //----------------------------------------------------------------------------------------
 /*
  * Called once per frame, before guiLogic().
@@ -244,7 +374,7 @@ void A1::guiLogic()
 		ImGui::PushID( 0 );
 		ImGui::ColorEdit3( "##Colour", colour );
 		ImGui::SameLine();
-		if( ImGui::RadioButton( "##Col", &current_col, 0 ) ) {
+		if( ImGui::RadioButton( "##Col", &currentColour, 0 ) ) {
 			// Select this colour.
 		}
 		ImGui::PopID();
@@ -296,6 +426,9 @@ void A1::draw()
 		glDrawArrays(GL_TRIANGLES, 0, 6 * 2 * 3);
 
 		// Highlight the active square.
+		glBindVertexArray(m_highlight_vao);
+		glUniform3f(col_uni, 1, 1, 1);
+		glDrawArrays(GL_TRIANGLES, 0, 4 * 2 * 3);
 	m_shader.disable();
 
 	// Restore defaults
@@ -392,7 +525,18 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 
 	// Fill in with event handling code...
 	if( action == GLFW_PRESS ) {
-		// Respond to some key events.
+		if (key == GLFW_KEY_UP) {
+			setSelectedPosition(m_gridSelectedRow - 1, m_gridSelectedCol);
+		}
+		if (key == GLFW_KEY_DOWN) {
+			setSelectedPosition(m_gridSelectedRow + 1, m_gridSelectedCol);
+		}
+		if (key == GLFW_KEY_LEFT) {
+			setSelectedPosition(m_gridSelectedRow, m_gridSelectedCol - 1);
+		}
+		if (key == GLFW_KEY_RIGHT) {
+			setSelectedPosition(m_gridSelectedRow, m_gridSelectedCol + 1);
+		}
 	}
 
 	return eventHandled;

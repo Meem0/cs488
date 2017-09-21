@@ -32,6 +32,16 @@ protected:
 private:
 	void initGrid();
 	void initCube();
+	void initHighlight();
+
+	void setSelectedPosition(int row, int col);
+	
+	void setGridHighlightPosition(int row, int col);
+
+	// Fields related to grid logic.
+	Grid m_grid;
+	int m_gridSelectedRow;
+	int m_gridSelectedCol;
 
 	// Fields related to the shader and uniforms.
 	ShaderProgram m_shader;
@@ -48,10 +58,14 @@ private:
 	GLuint m_cube_vao; // Vertex Array Object
 	GLuint m_cube_vbo; // Vertex Buffer Object
 
+	// Fields related to grid highlight.
+	GLuint m_highlight_vao; // Vertex Array Object
+	GLuint m_highlight_vbo; // Vertex Buffer Object
+
 	// Matrices controlling the camera and projection.
 	glm::mat4 proj;
 	glm::mat4 view;
 
 	float colour[3];
-	int current_col;
+	int currentColour;
 };
