@@ -31,7 +31,7 @@ protected:
 
 private:
 	void initGrid();
-	void initCube();
+	void initCubes();
 	void initHighlight();
 
 	void setSelectedPosition(int row, int col);

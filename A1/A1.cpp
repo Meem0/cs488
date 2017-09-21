@@ -79,8 +79,6 @@ namespace
 			FRONT_INDICES
 		};
 
-		int startOffset = offset;
-
 		const int* indices = FACE_INDICES[static_cast<unsigned int>(face)];
 		for (int i = 0; i < VERTS_PER_FACE; ++i) {
 			int coordsIndex = indices[i] * COORDS_PER_VERT;
@@ -90,9 +88,6 @@ namespace
 			arr[offset + 2] = COORDS[coordsIndex + 2] + row;
 			offset += 3;
 		}
-
-		vector<float> debugVector(arr + startOffset, arr + offset);
-		int end = 0;
 	}
 
 	//----------------------------------------------------------------------------------------
@@ -152,7 +147,7 @@ void A1::init()
 	col_uni = m_shader.getUniformLocation( "colour" );
 
 	initGrid();
-	initCube();
+	initCubes();
 	initHighlight();
 
 	// Set up initial view and projection matrices (need to do this here,
@@ -217,7 +212,7 @@ void A1::initGrid()
 }
 
 
-void A1::initCube()
+void A1::initCubes()
 {
 	float verts[COORDS_PER_BOX * 3];
 	int offset = 0;
