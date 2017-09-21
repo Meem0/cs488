@@ -127,13 +127,13 @@ A1::A1()
 	, m_copyMode(false)
 {
 	float colours[] = {
-		0, 0, 0,
 		1.0f, 1.0f, 1.0f,
+		0, 0, 0,
 		0.5f, 0.5f, 0.5f,
 		1.0f, 0, 0,
 		0, 1.0f, 0,
 		0, 0, 1.0f,
-		0.75f, 0.75f, 0,
+		0.75f, 0, 0.75f,
 		0, 0.75f, 0.75f
 	};
 	for (int i = 0; i < m_colours.size(); ++i) {
@@ -298,6 +298,7 @@ void A1::reset()
 	setSelectedPosition(0, 0);
 
 	std::fill(m_barCoords.begin(), m_barCoords.end(), 0);
+	m_currentColour = 0;
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, COORDS_ON_GRID * sizeof(float), m_barCoords.data());
@@ -408,6 +409,9 @@ void A1::guiLogic()
 	float opacity(0.5f);
 
 	ImGui::Begin("Debug Window", &showDebugWindow, ImVec2(100,100), opacity, windowFlags);
+		if( ImGui::Button( "Reset" ) ) {
+			reset();
+		}
 		if( ImGui::Button( "Quit Application" ) ) {
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
 		}
@@ -620,6 +624,10 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 		}
 		if (key == GLFW_KEY_R) {
 			reset();
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_Q) {
+			glfwSetWindowShouldClose(m_window, GL_TRUE);
 			eventHandled = true;
 		}
 	}
