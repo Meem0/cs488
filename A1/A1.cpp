@@ -18,12 +18,12 @@ const static int COORDS_PER_VERT = 3;
 const static int VERTS_PER_FACE = 6;
 const static int COORDS_PER_FACE = VERTS_PER_FACE * COORDS_PER_VERT;
 
-const static int FACES_PER_BOX = 6;
-const static int VERTS_PER_BOX = VERTS_PER_FACE * FACES_PER_BOX;
-const static int COORDS_PER_BOX = COORDS_PER_FACE * FACES_PER_BOX;
+const static int FACES_PER_BAR = 6;
+const static int VERTS_PER_BAR = VERTS_PER_FACE * FACES_PER_BAR;
+const static int COORDS_PER_BAR = COORDS_PER_FACE * FACES_PER_BAR;
 
-const static int BOXES_ON_GRID = DIM * DIM;
-const static int COORDS_ON_GRID = BOXES_ON_GRID * COORDS_PER_BOX;
+const static int BARS_ON_GRID = DIM * DIM;
+const static int COORDS_ON_GRID = BARS_ON_GRID * COORDS_PER_BAR;
 
 namespace
 {
@@ -40,7 +40,7 @@ namespace
 	//----------------------------------------------------------------------------------------
 	/*
 	* Overwrites COORDS_PER_FACE consecutive values in arr starting at index offset
-	* with the coordinates composing the specified face of a cube in the grid
+	* with the coordinates composing the specified face of a bar in the grid
 	* Offset will be at the index after the last value written
 	*/
 	void getGridFaceCoordinates(Face face, int row, int col, int height, float* arr, int& offset)
@@ -95,18 +95,18 @@ namespace
 
 	//----------------------------------------------------------------------------------------
 	/*
-	* Overwrites COORDS_PER_BOX consecutive values in arr starting at index offset
-	* with the coordinates composing the specified cube in the grid
+	* Overwrites COORDS_PER_BAR consecutive values in arr starting at index offset
+	* with the coordinates composing the specified bar in the grid
 	* Offset will be at the index after the last value written
 	*/
-	void getGridBoxCoordinates(int row, int col, int height, float* arr, int& offset)
+	void getGridBarCoordinates(int row, int col, int height, float* arr, int& offset)
 	{
 		if (height == 0) {
-			std::fill(arr + offset, arr + offset + COORDS_PER_BOX, 0);
-			offset += COORDS_PER_BOX;
+			std::fill(arr + offset, arr + offset + COORDS_PER_BAR, 0);
+			offset += COORDS_PER_BAR;
 		}
 		else {
-			for (int i = 0; i < FACES_PER_BOX; ++i) {
+			for (int i = 0; i < FACES_PER_BAR; ++i) {
 				Face face = static_cast<Face>(i);
 				getGridFaceCoordinates(face, row, col, height, arr, offset);
 			}
@@ -120,7 +120,7 @@ A1::A1()
 	: m_gridSelectedRow(0)
 	, m_gridSelectedCol(0)
 	, m_grid(DIM)
-	, m_cubeCoords(new float[COORDS_ON_GRID])
+	, m_barCoords(new float[COORDS_ON_GRID])
 	, m_currentColour(0)
 	, m_colours(8)
 	, m_copyMode(false)
@@ -147,7 +147,7 @@ A1::A1()
 // Destructor
 A1::~A1()
 {
-	delete[] m_cubeCoords;
+	delete[] m_barCoords;
 }
 
 //----------------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ void A1::init()
 	col_uni = m_shader.getUniformLocation( "colour" );
 
 	initGrid();
-	initCubes();
+	initBars();
 	initHighlight();
 
 	reset();
@@ -220,7 +220,7 @@ void A1::initGrid()
 	glGenVertexArrays( 1, &m_grid_vao );
 	glBindVertexArray( m_grid_vao );
 
-	// Create the cube vertex buffer
+	// Create the bar vertex buffer
 	glGenBuffers( 1, &m_grid_vbo );
 	glBindBuffer( GL_ARRAY_BUFFER, m_grid_vbo );
 	glBufferData( GL_ARRAY_BUFFER, sz*sizeof(float),
@@ -241,16 +241,16 @@ void A1::initGrid()
 }
 
 
-void A1::initCubes()
+void A1::initBars()
 {
 	// Create the vertex array to record buffer assignments.
-	glGenVertexArrays(1, &m_cube_vao);
-	glBindVertexArray(m_cube_vao);
+	glGenVertexArrays(1, &m_bar_vao);
+	glBindVertexArray(m_bar_vao);
 
-	// Create the cube vertex buffer
-	glGenBuffers(1, &m_cube_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
-	glBufferData(GL_ARRAY_BUFFER, COORDS_ON_GRID * sizeof(float), m_cubeCoords, GL_DYNAMIC_DRAW);
+	// Create the bar vertex buffer
+	glGenBuffers(1, &m_bar_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
+	glBufferData(GL_ARRAY_BUFFER, COORDS_ON_GRID * sizeof(float), m_barCoords, GL_DYNAMIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
 	GLint posAttrib = m_shader.getAttribLocation("position");
@@ -298,10 +298,10 @@ void A1::reset()
 
 	setSelectedPosition(0, 0);
 
-	std::fill(m_cubeCoords, m_cubeCoords + COORDS_ON_GRID, 0);
+	std::fill(m_barCoords, m_barCoords + COORDS_ON_GRID, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, COORDS_ON_GRID * sizeof(float), m_cubeCoords);
+	glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, COORDS_ON_GRID * sizeof(float), m_barCoords);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -345,11 +345,11 @@ void A1::setHeight(int row, int col, int height)
 	m_gridSelectedRow = row;
 	m_gridSelectedCol = col;
 
-	int startOffset = COORDS_PER_BOX * (DIM * row + col);
+	int startOffset = COORDS_PER_BAR * (DIM * row + col);
 	int offset = startOffset;
-	getGridBoxCoordinates(row, col, height, m_cubeCoords, offset);
-	glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, startOffset * sizeof(float), COORDS_PER_BOX * sizeof(float), m_cubeCoords + startOffset);
+	getGridBarCoordinates(row, col, height, m_barCoords, offset);
+	glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, startOffset * sizeof(float), COORDS_PER_BAR * sizeof(float), m_barCoords + startOffset);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -460,10 +460,10 @@ void A1::draw()
 		glUniform3f(col_uni, 1, 1, 1);
 		glDrawArrays(GL_LINES, 0, (3 + DIM) * 4);
 
-		// Draw the cubes
-		glBindVertexArray(m_cube_vao);
+		// Draw the bars
+		glBindVertexArray(m_bar_vao);
 		glUniform3f(col_uni, 1, 1, 1);
-		glDrawArrays(GL_TRIANGLES, 0, VERTS_PER_BOX * BOXES_ON_GRID);
+		glDrawArrays(GL_TRIANGLES, 0, VERTS_PER_BAR * BARS_ON_GRID);
 
 		// Highlight the active square.
 		glBindVertexArray(m_highlight_vao);
@@ -601,9 +601,9 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 		}
 		if (key == GLFW_KEY_1) {
 			int offset = 0;
-			getGridBoxCoordinates(2, 2, 0, m_cubeCoords, offset);
-			glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, offset * sizeof(float), m_cubeCoords);
+			getGridBarCoordinates(2, 2, 0, m_barCoords, offset);
+			glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, offset * sizeof(float), m_barCoords);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			eventHandled = true;
 		}

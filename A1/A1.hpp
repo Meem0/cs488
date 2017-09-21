@@ -33,7 +33,7 @@ protected:
 
 private:
 	void initGrid();
-	void initCubes();
+	void initBars();
 	void initHighlight();
 
 	void reset();
@@ -54,17 +54,17 @@ private:
 	GLint P_uni; // Uniform location for Projection matrix.
 	GLint V_uni; // Uniform location for View matrix.
 	GLint M_uni; // Uniform location for Model matrix.
-	GLint col_uni;   // Uniform location for cube colour.
+	GLint col_uni;   // Uniform location for bar colour.
 
 	// Fields related to grid geometry.
 	GLuint m_grid_vao; // Vertex Array Object
 	GLuint m_grid_vbo; // Vertex Buffer Object
 
-	// Fields related to cube.
-	GLuint m_cube_vao; // Vertex Array Object
-	GLuint m_cube_vbo; // Vertex Buffer Object
+	// Fields related to bar.
+	GLuint m_bar_vao; // Vertex Array Object
+	GLuint m_bar_vbo; // Vertex Buffer Object
 
-	float* m_cubeCoords;
+	float* m_barCoords;
 
 	// Fields related to grid highlight.
 	GLuint m_highlight_vao; // Vertex Array Object
