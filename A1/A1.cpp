@@ -269,6 +269,8 @@ void A1::initBars()
 
 void A1::initHighlight()
 {
+	std::vector<float> highlightInitVerts(5 * COORDS_PER_FACE, 0);
+
 	// Create the vertex array to record buffer assignments.
 	glGenVertexArrays(1, &m_highlight_vao);
 	glBindVertexArray(m_highlight_vao);
@@ -276,13 +278,12 @@ void A1::initHighlight()
 	// Create the highlight vertex buffer
 	glGenBuffers(1, &m_highlight_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_highlight_vbo);
+	glBufferData(GL_ARRAY_BUFFER, 5 * COORDS_PER_FACE * sizeof(float), highlightInitVerts.data(), GL_DYNAMIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
 	GLint posAttrib = m_shader.getAttribLocation("position");
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-	setGridHighlightPosition(m_gridSelectedRow, m_gridSelectedCol);
 
 	// Reset state to prevent rogue code from messing with *my*
 	// stuff!
@@ -370,7 +371,7 @@ void A1::setBarHeight(int row, int col, int height)
 
 void A1::setGridHighlightPosition(int row, int col)
 {
-	const size_t NUM_COORDS = 4 * COORDS_PER_FACE;
+	const size_t NUM_COORDS = 5 * COORDS_PER_FACE;
 
 	float verts[NUM_COORDS];
 	int offset = 0;
@@ -378,9 +379,10 @@ void A1::setGridHighlightPosition(int row, int col)
 	getGridFaceCoordinates(Face::BOTTOM, row, DIM, 0, verts, offset);
 	getGridFaceCoordinates(Face::BOTTOM, -1,  col, 0, verts, offset);
 	getGridFaceCoordinates(Face::BOTTOM, DIM, col, 0, verts, offset);
+	getGridFaceCoordinates(Face::BOTTOM, row, col, 0, verts, offset);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_highlight_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -498,7 +500,7 @@ void A1::draw()
 		// Highlight the active square.
 		glBindVertexArray(m_highlight_vao);
 		glUniform3f(col_uni, 1, 1, 1);
-		glDrawArrays(GL_TRIANGLES, 0, 4 * 2 * 3);
+		glDrawArrays(GL_TRIANGLES, 0, 5 * 2 * 3);
 	m_shader.disable();
 
 	// Restore defaults
