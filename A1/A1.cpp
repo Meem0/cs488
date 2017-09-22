@@ -122,7 +122,7 @@ A1::A1()
 	, m_grid(DIM)
 	, m_barCoords(COORDS_ON_GRID, 0)
 	, m_highlightFlashOn(true)
-	, m_colours(8)
+	, m_colours(12)
 	, m_currentColour(0)
 	, m_barColours(BARS_ON_GRID, 0)
 	, m_copyMode(false)
@@ -298,8 +298,12 @@ void A1::reset()
 		1.0f, 0, 0,
 		0, 1.0f, 0,
 		0, 0, 1.0f,
+		0.75f, 0.75f, 0,
 		0.75f, 0, 0.75f,
-		0, 0.75f, 0.75f
+		0, 0.75f, 0.75f,
+		0.25f, 0.25f, 0,
+		0.25f, 0, 0.25f,
+		0, 0.25f, 0.25f
 	};
 	for (int i = 0; i < m_colours.size(); ++i) {
 		auto& colour = m_colours[i];
