@@ -129,22 +129,6 @@ A1::A1()
 	, m_rotateMode(false)
 	, m_scaleAmount(1.0f)
 {
-	float colours[] = {
-		1.0f, 1.0f, 1.0f,
-		0, 0, 0,
-		0.5f, 0.5f, 0.5f,
-		1.0f, 0, 0,
-		0, 1.0f, 0,
-		0, 0, 1.0f,
-		0.75f, 0, 0.75f,
-		0, 0.75f, 0.75f
-	};
-	for (int i = 0; i < m_colours.size(); ++i) {
-		auto& colour = m_colours[i];
-		colour[0] = colours[i * 3 + 0];
-		colour[1] = colours[i * 3 + 1];
-		colour[2] = colours[i * 3 + 2];
-	}
 }
 
 //----------------------------------------------------------------------------------------
@@ -303,6 +287,26 @@ void A1::reset()
 
 	std::fill(m_barCoords.begin(), m_barCoords.end(), 0);
 	m_currentColour = 0;
+
+	m_rotationMatrix = glm::mat4();
+	m_scaleAmount = 1.0f;
+
+	float colours[] = {
+		1.0f, 1.0f, 1.0f,
+		0, 0, 0,
+		0.5f, 0.5f, 0.5f,
+		1.0f, 0, 0,
+		0, 1.0f, 0,
+		0, 0, 1.0f,
+		0.75f, 0, 0.75f,
+		0, 0.75f, 0.75f
+	};
+	for (int i = 0; i < m_colours.size(); ++i) {
+		auto& colour = m_colours[i];
+		colour[0] = colours[i * 3 + 0];
+		colour[1] = colours[i * 3 + 1];
+		colour[2] = colours[i * 3 + 2];
+	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_bar_vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, COORDS_ON_GRID * sizeof(float), m_barCoords.data());
@@ -622,8 +626,8 @@ bool A1::mouseScrollEvent(double xOffSet, double yOffSet) {
 	// Zoom in or out.
 	if (yOffSet != 0) {
 		m_scaleAmount += static_cast<float>(yOffSet) * 0.1f;
-		m_scaleAmount = std::min(m_scaleAmount, 0.5f);
-		m_scaleAmount = std::max(m_scaleAmount, 2.0f);
+		m_scaleAmount = std::max(m_scaleAmount, 0.5f);
+		m_scaleAmount = std::min(m_scaleAmount, 2.0f);
 
 		eventHandled = true;
 	}
