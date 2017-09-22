@@ -1,0 +1,6 @@
+Compilation:
+	premake4 gmake
+	make
+
+Manual:
+	It's right to the spec.  Added 4 extra colours because I wanted to make that cool sprite for the screenshot though, sorry it makes the window a little too big.
