@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <array>
+#include <chrono>
 
 #include "cs488-framework/CS488Window.hpp"
 #include "cs488-framework/OpenGLImport.hpp"
@@ -37,6 +38,7 @@ private:
 	void initHighlight();
 
 	void reset();
+	void resetHighlightFlash();
 
 	void moveSelectedPosition(int deltaRow, int deltaCol);
 	void setSelectedPosition(int row, int col);
@@ -70,16 +72,21 @@ private:
 	GLuint m_highlight_vao; // Vertex Array Object
 	GLuint m_highlight_vbo; // Vertex Buffer Object
 
+	std::chrono::high_resolution_clock::time_point m_highlightFlashIntervalStart;
+	bool m_highlightFlashOn;
+
 	// Matrices controlling the camera, projection, and rotation
 	glm::mat4 proj;
 	glm::mat4 view;
 	glm::mat4 m_rotationMatrix;
 
+	// colours
 	std::vector<std::array<float, 3>> m_colours;
 	int m_currentColour;
 
 	std::vector<unsigned char> m_barColours;
 
+	// keeping track of interactions
 	bool m_copyMode;
 	bool m_rotateMode;
 	double m_mouseXPos;

@@ -2,7 +2,7 @@
 #include "cs488-framework/GlErrorCheck.hpp"
 
 #include <iostream>
-#include <vector>
+#include <cmath>
 
 #include <imgui/imgui.h>
 #include <glm/glm.hpp>
@@ -121,6 +121,7 @@ A1::A1()
 	, m_gridSelectedCol(0)
 	, m_grid(DIM)
 	, m_barCoords(COORDS_ON_GRID, 0)
+	, m_highlightFlashOn(true)
 	, m_colours(8)
 	, m_currentColour(0)
 	, m_barColours(BARS_ON_GRID, 0)
@@ -338,6 +339,8 @@ void A1::setSelectedPosition(int row, int col)
 	m_gridSelectedCol = col;
 
 	setGridHighlightPosition(row, col);
+
+	resetHighlightFlash();
 }
 
 void A1::setBarHeight(int row, int col, int height)
@@ -356,6 +359,8 @@ void A1::setBarHeight(int row, int col, int height)
 	m_gridSelectedRow = row;
 	m_gridSelectedCol = col;
 
+	setGridHighlightPosition(row, col);
+
 	int startOffset = COORDS_PER_BAR * (DIM * row + col);
 	int offset = startOffset;
 	getGridBarCoordinates(row, col, height, m_barCoords.data(), offset);
@@ -371,6 +376,8 @@ void A1::setBarHeight(int row, int col, int height)
 
 void A1::setGridHighlightPosition(int row, int col)
 {
+	int height = m_grid.getHeight(row, col);
+
 	const size_t NUM_COORDS = 5 * COORDS_PER_FACE;
 
 	float verts[NUM_COORDS];
@@ -379,11 +386,16 @@ void A1::setGridHighlightPosition(int row, int col)
 	getGridFaceCoordinates(Face::BOTTOM, row, DIM, 0, verts, offset);
 	getGridFaceCoordinates(Face::BOTTOM, -1,  col, 0, verts, offset);
 	getGridFaceCoordinates(Face::BOTTOM, DIM, col, 0, verts, offset);
-	getGridFaceCoordinates(Face::BOTTOM, row, col, 0, verts, offset);
+	getGridFaceCoordinates(Face::TOP, row, col, height, verts, offset);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_highlight_vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void A1::resetHighlightFlash() {
+	m_highlightFlashOn = true;
+	m_highlightFlashIntervalStart = chrono::high_resolution_clock::now();
 }
 
 //----------------------------------------------------------------------------------------
@@ -392,7 +404,12 @@ void A1::setGridHighlightPosition(int row, int col)
  */
 void A1::appLogic()
 {
-	// Place per frame, application logic here ...
+	auto now = chrono::high_resolution_clock::now();
+	chrono::duration<float, std::milli> dt = now - m_highlightFlashIntervalStart;
+	if (dt.count() > 500.0f) {
+		m_highlightFlashOn = !m_highlightFlashOn;
+		m_highlightFlashIntervalStart = now;
+	}
 }
 
 //----------------------------------------------------------------------------------------
@@ -500,7 +517,22 @@ void A1::draw()
 		// Highlight the active square.
 		glBindVertexArray(m_highlight_vao);
 		glUniform3f(col_uni, 1, 1, 1);
-		glDrawArrays(GL_TRIANGLES, 0, 5 * 2 * 3);
+		glDrawArrays(GL_TRIANGLES, 0, 4 * 2 * 3);
+		if (m_highlightFlashOn) {
+			glDisable(GL_DEPTH_TEST);
+
+			// change the colour to black if the bar's colour is bright
+			if (m_grid.getHeight(m_gridSelectedRow, m_gridSelectedCol) > 0) {
+				int colourIndex = m_barColours[m_gridSelectedRow * DIM + m_gridSelectedCol];
+				const auto& colour = m_colours[colourIndex];
+				if (colour[0] + colour[1] + colour[2] > 1.5f) {
+					glUniform3f(col_uni, 0, 0, 0);
+				}
+			}
+
+			glDrawArrays(GL_TRIANGLES, 4 * 2 * 3, 2 * 3);
+			glEnable(GL_DEPTH_TEST);
+		}
 	m_shader.disable();
 
 	// Restore defaults
@@ -590,12 +622,8 @@ bool A1::mouseScrollEvent(double xOffSet, double yOffSet) {
 	// Zoom in or out.
 	if (yOffSet != 0) {
 		m_scaleAmount += static_cast<float>(yOffSet) * 0.1f;
-		if (m_scaleAmount < 0.5f) {
-			m_scaleAmount = 0.5f;
-		}
-		else if (m_scaleAmount > 2.0f) {
-			m_scaleAmount = 2.0f;
-		}
+		m_scaleAmount = std::min(m_scaleAmount, 0.5f);
+		m_scaleAmount = std::max(m_scaleAmount, 2.0f);
 
 		eventHandled = true;
 	}
