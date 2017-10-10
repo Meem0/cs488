@@ -405,6 +405,10 @@ void A2::appLogic()
 
 		for (int i = 0; i < modelPoints.size(); ++i) {
 			vec4 point = transform * modelPoints[i];
+
+			point.x = m_viewportOrigin.x + ((point.x + 1.0f) / 2.0f) * m_viewportSize.x;
+			point.y = m_viewportOrigin.y - ((point.y + 1.0f) / 2.0f) * m_viewportSize.y;
+
 			p[i] = vec2(point.x, point.y);
 		}
 
