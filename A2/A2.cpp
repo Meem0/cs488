@@ -160,7 +160,7 @@ void A2::reset() {
 
 	m_modelMat = glm::mat4();
 
-	m_viewportOrigin = glm::vec2(-0.95f, 0.95f);
+	m_viewportOrigin = glm::vec2(-0.95f, -0.95f);
 	m_viewportSize = glm::vec2(1.9f, 1.9f);
 }
 
@@ -176,30 +176,6 @@ void A2::setInteractionMode(InteractionMode interactionMode) {
 
 //----------------------------------------------------------------------------------------
 /*
-* Maps screen coordinates (0, window size) to normalized device coordinates (0, 2)
-*/
-glm::vec2 A2::screenCoordsToNDC(glm::vec2 screenCoords) const
-{
-	return glm::vec2(
-		2.0f * screenCoords.x / static_cast<float>(m_windowWidth),
-		2.0f * screenCoords.y / static_cast<float>(m_windowHeight)
-	);
-}
-
-//----------------------------------------------------------------------------------------
-/*
-* Maps screen coordinates (0, window size) to normalized device coordinates (-1, 1)
-*/
-glm::vec2 A2::screenCoordsToNDCPoint(glm::vec2 screenCoords) const
-{
-	glm::vec2 coords = screenCoordsToNDC(screenCoords);
-	coords.x -= 1.0f;
-	coords.y = 1.0f - coords.y;
-	return coords;
-}
-
-//----------------------------------------------------------------------------------------
-/*
 * Get the current dragged box
 */
 void A2::getDragBox(glm::vec2& origin, glm::vec2& size) const
@@ -209,12 +185,14 @@ void A2::getDragBox(glm::vec2& origin, glm::vec2& size) const
 	float xEnd = std::max(m_mouseXPos, m_mouseXDragOrigin);
 	float yEnd = std::max(m_mouseYPos, m_mouseYDragOrigin);
 
-	origin = screenCoordsToNDCPoint(glm::vec2(xStart, yStart));
+	float convertWidth = 2.0f / static_cast<float>(m_windowWidth);
+	float convertHeight = 2.0f / static_cast<float>(m_windowHeight);
 
-	size = screenCoordsToNDC(glm::vec2(
-		xEnd - xStart,
-		yEnd - yStart
-	));
+	origin.x = convertWidth * xStart - 1.0f;
+	origin.y = 1.0f - convertHeight * yEnd;
+
+	size.x = convertWidth * (xEnd - xStart);
+	size.y = convertHeight * (yEnd - yStart);
 }
 
 //----------------------------------------------------------------------------------------
@@ -348,9 +326,51 @@ void A2::drawAlignedRect(glm::vec2 origin, glm::vec2 size) {
 	float w = size.x;
 	float h = size.y;
 	drawLine(vec2(x, y), vec2(x + w, y));
-	drawLine(vec2(x + w, y), vec2(x + w, y - h));
-	drawLine(vec2(x + w, y - h), vec2(x, y - h));
-	drawLine(vec2(x, y - h), vec2(x, y));
+	drawLine(vec2(x + w, y), vec2(x + w, y + h));
+	drawLine(vec2(x + w, y + h), vec2(x, y + h));
+	drawLine(vec2(x, y + h), vec2(x, y));
+}
+
+//----------------------------------------------------------------------------------------
+/*
+* Draw a rectangle aligned with the window
+*/
+void A2::drawClippedLine(vec2 A, vec2 B) {
+	array<vec2, 4> normals = {
+		vec2(0, -1.0f), // top
+		vec2(-1.0f, 0), // right
+		vec2(0, 1.0f),  // bottom
+		vec2(1.0f, 0)   // left
+	};
+	array<vec2, 4> points = {
+		m_viewportOrigin + m_viewportSize,
+		m_viewportOrigin + m_viewportSize,
+		m_viewportOrigin,
+		m_viewportOrigin
+	};
+
+	for (int i = 0; i < normals.size(); ++i) {
+		vec2 P = points[i];
+		vec2 n = normals[i];
+
+		float wecA = glm::dot(A - P, n);
+		float wecB = glm::dot(B - P, n);
+
+		if (wecA < 0 && wecB < 0) {
+			return;
+		}
+		if (!(wecA >= 0 && wecB >= 0)) {
+			float t = wecA / (wecA - wecB);
+			if (wecA < 0) {
+				A = A + t * (B - A);
+			}
+			else {
+				B = A + t * (B - A);
+			}
+		}
+	}
+
+	drawLine(A, B);
 }
 
 //----------------------------------------------------------------------------------------
@@ -407,28 +427,28 @@ void A2::appLogic()
 			vec4 point = transform * modelPoints[i];
 
 			point.x = m_viewportOrigin.x + ((point.x + 1.0f) / 2.0f) * m_viewportSize.x;
-			point.y = m_viewportOrigin.y - ((point.y + 1.0f) / 2.0f) * m_viewportSize.y;
+			point.y = m_viewportOrigin.y + ((point.y + 1.0f) / 2.0f) * m_viewportSize.y;
 
 			p[i] = vec2(point.x, point.y);
 		}
 
 		// bottom
-		drawLine(p[0], p[1]);
-		drawLine(p[1], p[5]);
-		drawLine(p[5], p[4]);
-		drawLine(p[4], p[0]);
+		drawClippedLine(p[0], p[1]);
+		drawClippedLine(p[1], p[5]);
+		drawClippedLine(p[5], p[4]);
+		drawClippedLine(p[4], p[0]);
 
 		// verticals
-		drawLine(p[0], p[2]);
-		drawLine(p[1], p[3]);
-		drawLine(p[4], p[6]);
-		drawLine(p[5], p[7]);
+		drawClippedLine(p[0], p[2]);
+		drawClippedLine(p[1], p[3]);
+		drawClippedLine(p[4], p[6]);
+		drawClippedLine(p[5], p[7]);
 
 		// top
-		drawLine(p[2], p[3]);
-		drawLine(p[3], p[7]);
-		drawLine(p[7], p[6]);
-		drawLine(p[6], p[2]);
+		drawClippedLine(p[2], p[3]);
+		drawClippedLine(p[3], p[7]);
+		drawClippedLine(p[7], p[6]);
+		drawClippedLine(p[6], p[2]);
 	}
 }
 

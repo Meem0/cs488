@@ -70,9 +70,7 @@ protected:
 	void setInteractionMode(InteractionMode);
 
 	void drawAlignedRect(glm::vec2 origin, glm::vec2 size);
-
-	glm::vec2 screenCoordsToNDC(glm::vec2 screenCoords) const;
-	glm::vec2 screenCoordsToNDCPoint(glm::vec2 screenCoords) const;
+	void drawClippedLine(glm::vec2 A, glm::vec2 B);
 
 	void getDragBox(glm::vec2& origin, glm::vec2& size) const;
 
@@ -98,7 +96,7 @@ protected:
 
 	glm::mat4 m_modelMat;
 
-	glm::vec2 m_viewportOrigin; // top-left, NDC
+	glm::vec2 m_viewportOrigin; // bottom-left, NDC
 	glm::vec2 m_viewportSize; // NDC
 
 	int m_interactionMode;
