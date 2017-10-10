@@ -96,6 +96,8 @@ protected:
 	glm::vec3 m_modelTranslate;
 	glm::vec3 m_modelScale;
 
+	glm::mat4 m_modelMat;
+
 	glm::vec2 m_viewportOrigin; // top-left, NDC
 	glm::vec2 m_viewportSize; // NDC
 

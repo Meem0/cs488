@@ -158,6 +158,8 @@ void A2::reset() {
 	m_modelTranslate = glm::vec3();
 	m_modelScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
+	m_modelMat = glm::mat4();
+
 	m_viewportOrigin = glm::vec2(-0.95f, 0.95f);
 	m_viewportSize = glm::vec2(1.9f, 1.9f);
 }
@@ -395,13 +397,11 @@ void A2::appLogic()
 		};
 		array<vec2, NumPoints> p;
 
-		mat4 modelTranslate = translateMatrix3D(m_modelTranslate);
-		mat4 modelRotate = rotateMatrix3D(m_modelRotate);
 		mat4 modelScale = scaleMatrix3D(m_modelScale);
-
+		mat4 viewRotate = rotateMatrix3D(m_viewRotate);
 		mat4 viewTranslate = translateMatrix3D(m_viewTranslate);
 
-		mat4 transform = viewTranslate * modelScale * modelTranslate * modelRotate;
+		mat4 transform = viewTranslate * viewRotate * m_modelMat * modelScale;
 
 		for (int i = 0; i < modelPoints.size(); ++i) {
 			vec4 point = transform * modelPoints[i];
@@ -610,29 +610,45 @@ bool A2::mouseMoveEvent (
 				m_farPlaneDistance += dx;
 			}
 			break;
-		case InteractionMode::RotateModel:
+		case InteractionMode::RotateModel: {
+			vec3 rotateDelta;
 			if (m_leftMousePressed) {
 				m_modelRotate.x += rotateAmount;
+				rotateDelta.x = rotateAmount;
 			}
 			if (m_middleMousePressed) {
 				m_modelRotate.y += rotateAmount;
+				rotateDelta.y = rotateAmount;
 			}
 			if (m_rightMousePressed) {
 				m_modelRotate.z += rotateAmount;
+				rotateDelta.z = rotateAmount;
+			}
+			if (rotateDelta != vec3()) {
+				m_modelMat = m_modelMat * rotateMatrix3D(rotateDelta);
 			}
 			break;
-		case InteractionMode::TranslateModel:
+		}
+		case InteractionMode::TranslateModel: {
+			vec3 translateDelta;
 			if (m_leftMousePressed) {
 				m_modelTranslate.x += translateAmount;
+				translateDelta.x = translateAmount;
 			}
 			if (m_middleMousePressed) {
 				m_modelTranslate.y += translateAmount;
+				translateDelta.y = translateAmount;
 			}
 			if (m_rightMousePressed) {
 				m_modelTranslate.z += translateAmount;
+				translateDelta.z = translateAmount;
+			}
+			if (translateDelta != vec3()) {
+				m_modelMat = m_modelMat * translateMatrix3D(translateDelta);
 			}
 			break;
-		case InteractionMode::ScaleModel:
+		}
+		case InteractionMode::ScaleModel: {
 			double scaleFactor = 2.0 / windowWidth;
 			double scaleAmount = dx * scaleFactor;
 
@@ -649,6 +665,7 @@ bool A2::mouseMoveEvent (
 				m_modelScale.z = std::max(0.0f, m_modelScale.z);
 			}
 			break;
+		}
 		}
 	}
 
