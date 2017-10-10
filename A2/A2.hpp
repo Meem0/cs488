@@ -68,7 +68,12 @@ protected:
 
 	void setInteractionMode(InteractionMode);
 
+	void drawAlignedRect(glm::vec2 origin, glm::vec2 size);
+
 	glm::vec2 screenCoordsToNDC(glm::vec2 screenCoords) const;
+	glm::vec2 screenCoordsToNDCPoint(glm::vec2 screenCoords) const;
+
+	void getDragBox(glm::vec2& origin, glm::vec2& size) const;
 
 	ShaderProgram m_shader;
 

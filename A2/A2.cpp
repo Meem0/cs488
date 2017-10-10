@@ -100,7 +100,7 @@ void A2::reset() {
 	m_modelTranslate = glm::vec3();
 	m_modelScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
-	m_viewportOrigin = glm::vec2(-0.95f, -0.95f);
+	m_viewportOrigin = glm::vec2(-0.95f, 0.95f);
 	m_viewportSize = glm::vec2(1.9f, 1.9f);
 }
 
@@ -115,12 +115,46 @@ void A2::setInteractionMode(InteractionMode interactionMode) {
 }
 
 //----------------------------------------------------------------------------------------
+/*
+* Maps screen coordinates (0, window size) to normalized device coordinates (0, 2)
+*/
 glm::vec2 A2::screenCoordsToNDC(glm::vec2 screenCoords) const
 {
 	return glm::vec2(
 		2.0f * screenCoords.x / static_cast<float>(m_windowWidth),
 		2.0f * screenCoords.y / static_cast<float>(m_windowHeight)
 	);
+}
+
+//----------------------------------------------------------------------------------------
+/*
+* Maps screen coordinates (0, window size) to normalized device coordinates (-1, 1)
+*/
+glm::vec2 A2::screenCoordsToNDCPoint(glm::vec2 screenCoords) const
+{
+	glm::vec2 coords = screenCoordsToNDC(screenCoords);
+	coords.x -= 1.0f;
+	coords.y = 1.0f - coords.y;
+	return coords;
+}
+
+//----------------------------------------------------------------------------------------
+/*
+* Get the current dragged box
+*/
+void A2::getDragBox(glm::vec2& origin, glm::vec2& size) const
+{
+	float xStart = std::min(m_mouseXPos, m_mouseXDragOrigin);
+	float yStart = std::min(m_mouseYPos, m_mouseYDragOrigin);
+	float xEnd = std::max(m_mouseXPos, m_mouseXDragOrigin);
+	float yEnd = std::max(m_mouseYPos, m_mouseYDragOrigin);
+
+	origin = screenCoordsToNDCPoint(glm::vec2(xStart, yStart));
+
+	size = screenCoordsToNDC(glm::vec2(
+		xEnd - xStart,
+		yEnd - yStart
+	));
 }
 
 //----------------------------------------------------------------------------------------
@@ -246,6 +280,21 @@ void A2::drawLine(
 
 //----------------------------------------------------------------------------------------
 /*
+* Draw a rectangle aligned with the window
+*/
+void A2::drawAlignedRect(glm::vec2 origin, glm::vec2 size) {
+	float x = origin.x;
+	float y = origin.y;
+	float w = size.x;
+	float h = size.y;
+	drawLine(vec2(x, y), vec2(x + w, y));
+	drawLine(vec2(x + w, y), vec2(x + w, y - h));
+	drawLine(vec2(x + w, y - h), vec2(x, y - h));
+	drawLine(vec2(x, y - h), vec2(x, y));
+}
+
+//----------------------------------------------------------------------------------------
+/*
  * Called once per frame, before guiLogic().
  */
 void A2::appLogic()
@@ -255,16 +304,22 @@ void A2::appLogic()
 	// Call at the beginning of frame, before drawing lines:
 	initLineData();
 
+	// Draw draggable viewport box:
+	if (m_dragViewport)
+	{
+		setLineColour(vec3(0.0f, 0.0f, 0.0f));
+
+		vec2 origin, size;
+		getDragBox(origin, size);
+
+		drawAlignedRect(origin, size);
+	}
+
 	// Draw outer square:
-	setLineColour(vec3(1.0f, 0.7f, 0.8f));
-	float x = m_viewportOrigin.x;
-	float y = m_viewportOrigin.y;
-	float w = m_viewportSize.x;
-	float h = m_viewportSize.y;
-	drawLine(vec2(x, y), vec2(x + w, y));
-	drawLine(vec2(x + w, y), vec2(x + w, y - h));
-	drawLine(vec2(x + w, y - h), vec2(x, y - h));
-	drawLine(vec2(x, y - h), vec2(x, y));
+	{
+		setLineColour(vec3(1.0f, 0.7f, 0.8f));
+		drawAlignedRect(m_viewportOrigin, m_viewportSize);
+	}
 
 	// Draw inner square:
 	setLineColour(vec3(0.2f, 1.0f, 1.0f));
@@ -404,6 +459,7 @@ bool A2::mouseMoveEvent (
 		double xPosPrev = m_mouseXPos;
 		double dx = xPos - xPosPrev;
 		m_mouseXPos = xPos;
+		m_mouseYPos = yPos;
 
 		double windowWidth = static_cast<double>(m_windowWidth);
 
@@ -528,19 +584,7 @@ bool A2::mouseButtonInputEvent (
 				m_leftMousePressed = false;
 
 				if (m_interactionMode == static_cast<int>(InteractionMode::Viewport)) {
-					float xStart = std::min(m_mouseXPos, m_mouseXDragOrigin);
-					float yStart = std::min(m_mouseYPos, m_mouseYDragOrigin);
-					float xEnd = std::max(m_mouseXPos, m_mouseXDragOrigin);
-					float yEnd = std::max(m_mouseYPos, m_mouseYDragOrigin);
-
-					m_viewportOrigin = screenCoordsToNDC(glm::vec2(xStart, yStart));
-					m_viewportOrigin.x -= 1.0f;
-					m_viewportOrigin.y = 1.0f - m_viewportOrigin.y;
-
-					m_viewportSize = screenCoordsToNDC(glm::vec2(
-						xEnd - xStart,
-						yEnd - yStart
-					));
+					getDragBox(m_viewportOrigin, m_viewportSize);
 
 					m_dragViewport = false;
 				}
