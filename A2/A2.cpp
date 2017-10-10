@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <array>
 using namespace std;
 
 #include <imgui/imgui.h>
@@ -13,6 +14,24 @@ using namespace std;
 using namespace glm;
 
 namespace {
+	glm::mat4 translateMatrix3D(glm::vec3 t) {
+		return glm::mat4(
+			1.0f, 0, 0, 0,
+			0, 1.0f, 0, 0,
+			0, 0, 1.0f, 0,
+			t.x, t.y, t.z, 1.0f
+		);
+	}
+
+	glm::mat4 scaleMatrix3D(glm::vec3 s) {
+		return glm::mat4(
+			s.x, 0, 0, 0,
+			0, s.y, 0, 0,
+			0, 0, s.z, 0,
+			0, 0, 0, 1.0f
+		);
+	}
+
 	const static vector<char*> InteractionModeNames {
 		"Rotate View",
 		"Translate View",
@@ -323,10 +342,50 @@ void A2::appLogic()
 
 	// Draw inner square:
 	setLineColour(vec3(0.2f, 1.0f, 1.0f));
-	drawLine(vec2(-0.25f, -0.25f), vec2(0.25f, -0.25f));
-	drawLine(vec2(0.25f, -0.25f), vec2(0.25f, 0.25f));
-	drawLine(vec2(0.25f, 0.25f), vec2(-0.25f, 0.25f));
-	drawLine(vec2(-0.25f, 0.25f), vec2(-0.25f, -0.25f));
+	{
+		const static unsigned int NumPoints = 8;
+		array<vec4, NumPoints> modelPoints = {
+			vec4(-0.5f, -0.5f, -0.5f, 1.0f), // 0 left-bottom-back
+			vec4(0.5f, -0.5f, -0.5f, 1.0f),  // 1 right-bottom-back
+			vec4(-0.5f, 0.5f, -0.5f, 1.0f),  // 2 left-top-back
+			vec4(0.5f, 0.5f, -0.5f, 1.0f),   // 3 right-top-back
+			vec4(-0.5f, -0.5f, 0.5f, 1.0f),  // 4 left-bottom-front
+			vec4(0.5f, -0.5f, 0.5f, 1.0f),   // 5 right-bottom-front
+			vec4(-0.5f, 0.5f, 0.5f, 1.0f),   // 6 left-top-front
+			vec4(0.5f, 0.5f, 0.5f, 1.0f),    // 7 right-top-front
+		};
+		array<vec2, NumPoints> p;
+
+		mat4 modelTranslate = translateMatrix3D(m_modelTranslate);
+		mat4 modelScale = scaleMatrix3D(m_modelScale);
+
+		mat4 viewTranslate = translateMatrix3D(m_viewTranslate);
+
+		mat4 transform = viewTranslate * modelScale * modelTranslate;
+
+		for (int i = 0; i < modelPoints.size(); ++i) {
+			vec4 point = transform * modelPoints[i];
+			p[i] = vec2(point.x, point.y);
+		}
+
+		// bottom
+		drawLine(p[0], p[1]);
+		drawLine(p[1], p[5]);
+		drawLine(p[5], p[4]);
+		drawLine(p[4], p[0]);
+
+		// verticals
+		drawLine(p[0], p[2]);
+		drawLine(p[1], p[3]);
+		drawLine(p[4], p[6]);
+		drawLine(p[5], p[7]);
+
+		// top
+		drawLine(p[2], p[3]);
+		drawLine(p[3], p[7]);
+		drawLine(p[7], p[6]);
+		drawLine(p[6], p[2]);
+	}
 }
 
 //----------------------------------------------------------------------------------------
@@ -466,6 +525,9 @@ bool A2::mouseMoveEvent (
 		double rotateFactor = 360.0 / windowWidth;
 		double rotateAmount = dx * rotateFactor;
 
+		double translateFactor = 2.0 / windowWidth;
+		double translateAmount = dx * translateFactor;
+
 		switch (static_cast<InteractionMode>(m_interactionMode)) {
 		case InteractionMode::RotateView:
 			if (m_leftMousePressed) {
@@ -480,13 +542,13 @@ bool A2::mouseMoveEvent (
 			break;
 		case InteractionMode::TranslateView:
 			if (m_leftMousePressed) {
-				m_viewTranslate.x += dx;
+				m_viewTranslate.x += translateAmount;
 			}
 			if (m_middleMousePressed) {
-				m_viewTranslate.y += dx;
+				m_viewTranslate.y += translateAmount;
 			}
 			if (m_rightMousePressed) {
-				m_viewTranslate.z += dx;
+				m_viewTranslate.z += translateAmount;
 			}
 			break;
 		case InteractionMode::Perspective:
@@ -521,13 +583,13 @@ bool A2::mouseMoveEvent (
 			break;
 		case InteractionMode::TranslateModel:
 			if (m_leftMousePressed) {
-				m_modelTranslate.x += dx;
+				m_modelTranslate.x += translateAmount;
 			}
 			if (m_middleMousePressed) {
-				m_modelTranslate.y += dx;
+				m_modelTranslate.y += translateAmount;
 			}
 			if (m_rightMousePressed) {
-				m_modelTranslate.z += dx;
+				m_modelTranslate.z += translateAmount;
 			}
 			break;
 		case InteractionMode::ScaleModel:
