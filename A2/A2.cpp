@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include <array>
+#include <cmath>
 using namespace std;
 
 #include <imgui/imgui.h>
@@ -21,6 +22,44 @@ namespace {
 			0, 0, 1.0f, 0,
 			t.x, t.y, t.z, 1.0f
 		);
+	}
+
+	float radToDeg(float rad) {
+		return 2.0f * M_PI * rad / 360.0f;
+	}
+
+	glm::mat4 rotateMatrixX3D(float t) {
+		t = radToDeg(t);
+		return glm::mat4(
+			1.0f, 0, 0, 0,
+			0, cos(t), -sin(t), 0,
+			0, sin(t), cos(t), 0,
+			0, 0, 0, 1.0f
+		);
+	}
+
+	glm::mat4 rotateMatrixY3D(float t) {
+		t = radToDeg(t);
+		return glm::mat4(
+			cos(t), 0, sin(t), 0,
+			0, 1.0f, 0, 0,
+			-sin(t), 0, cos(t), 0,
+			0, 0, 0, 1.0f
+		);
+	}
+
+	glm::mat4 rotateMatrixZ3D(float t) {
+		t = radToDeg(t);
+		return glm::mat4(
+			cos(t), sin(t), 0, 0,
+			-sin(t), cos(t), 0, 0,
+			0, 0, 1.0f, 0,
+			0, 0, 0, 1.0f
+		);
+	}
+
+	glm::mat4 rotateMatrix3D(glm::vec3 r) {
+		return rotateMatrixX3D(r.x) * rotateMatrixY3D(r.y) * rotateMatrixZ3D(r.z);
 	}
 
 	glm::mat4 scaleMatrix3D(glm::vec3 s) {
@@ -357,11 +396,12 @@ void A2::appLogic()
 		array<vec2, NumPoints> p;
 
 		mat4 modelTranslate = translateMatrix3D(m_modelTranslate);
+		mat4 modelRotate = rotateMatrix3D(m_modelRotate);
 		mat4 modelScale = scaleMatrix3D(m_modelScale);
 
 		mat4 viewTranslate = translateMatrix3D(m_viewTranslate);
 
-		mat4 transform = viewTranslate * modelScale * modelTranslate;
+		mat4 transform = viewTranslate * modelScale * modelTranslate * modelRotate;
 
 		for (int i = 0; i < modelPoints.size(); ++i) {
 			vec4 point = transform * modelPoints[i];
