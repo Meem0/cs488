@@ -2,6 +2,7 @@
 #include "cs488-framework/GlErrorCheck.hpp"
 
 #include <iostream>
+#include <algorithm>
 using namespace std;
 
 #include <imgui/imgui.h>
@@ -10,6 +11,27 @@ using namespace std;
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/io.hpp>
 using namespace glm;
+
+namespace {
+	enum class InteractionMode {
+		RotateView,
+		TranslateView,
+		Perspective,
+		RotateModel,
+		TranslateModel,
+		ScaleModel,
+		Viewport,
+	};
+	const static vector<char*> InteractionModeNames {
+		"Rotate View",
+		"Translate View",
+		"Perspective",
+		"Rotate Model",
+		"Translate Model",
+		"Scale Model",
+		"Viewport",
+	};
+}
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -55,6 +77,31 @@ void A2::init()
 	generateVertexBuffers();
 
 	mapVboDataToVertexAttributeLocation();
+
+	reset();
+}
+
+//----------------------------------------------------------------------------------------
+void A2::quit() {
+	glfwSetWindowShouldClose(m_window, GL_TRUE);
+}
+
+//----------------------------------------------------------------------------------------
+void A2::reset() {
+	m_interactionMode = static_cast<int>(InteractionMode::RotateModel);
+
+	m_viewRotate = glm::vec3();
+	m_viewTranslate = glm::vec3();
+	m_fov = 30.0f;
+	m_nearPlaneDistance = 0.1f;
+	m_farPlaneDistance = 100.0f;
+	m_modelRotate = glm::vec3();
+	m_modelTranslate = glm::vec3();
+	m_modelScale = glm::vec3(1.0f, 1.0f, 1.0f);
+
+	m_leftMousePressed = false;
+	m_middleMousePressed = false;
+	m_rightMousePressed = false;
 }
 
 //----------------------------------------------------------------------------------------
@@ -223,18 +270,34 @@ void A2::guiLogic()
 
 	ImGui::Begin("Properties", &showDebugWindow, ImVec2(100,100), opacity,
 			windowFlags);
-
-
-		// Add more gui elements here here ...
-
-
+	{
 		// Create Button, and check if it was clicked:
-		if( ImGui::Button( "Quit Application" ) ) {
-			glfwSetWindowShouldClose(m_window, GL_TRUE);
+		if (ImGui::Button("Reset")) {
+			reset();
+		}
+		if (ImGui::Button("Quit Application")) {
+			quit();
 		}
 
-		ImGui::Text( "Framerate: %.1f FPS", ImGui::GetIO().Framerate );
+		for (int i = 0; i < InteractionModeNames.size(); ++i) {
+			ImGui::PushID(i);
+			if (ImGui::RadioButton(InteractionModeNames[i], &m_interactionMode, i)) {
+			}
+			ImGui::PopID();
+		}
 
+		ImGui::Text("View Rotation: (%.1f, %.1f, %.1f)", m_viewRotate.x, m_viewRotate.y, m_viewRotate.z);
+		ImGui::Text("View Translation: (%.1f, %.1f, %.1f)", m_viewTranslate.x, m_viewTranslate.y, m_viewTranslate.z);
+		ImGui::Text("Field of View: %.1f°", m_fov);
+		ImGui::Text("Near Plane: %.1f", m_nearPlaneDistance);
+		ImGui::Text("Far Plane: %.1f", m_farPlaneDistance);
+		ImGui::Text("Model Rotation: (%.1f, %.1f, %.1f)", m_modelRotate.x, m_modelRotate.y, m_modelRotate.z);
+		ImGui::Text("Model Translation: (%.1f, %.1f, %.1f)", m_modelTranslate.x, m_modelTranslate.y, m_modelTranslate.z);
+		ImGui::Text("Model Scale: (%.1f, %.1f, %.1f)", m_modelScale.x, m_modelScale.y, m_modelScale.z);
+
+		ImGui::Text("Framerate: %.1f FPS", ImGui::GetIO().Framerate);
+
+	}
 	ImGui::End();
 }
 
@@ -315,7 +378,96 @@ bool A2::mouseMoveEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	if (!ImGui::IsMouseHoveringAnyWindow()) {
+		double xPosPrev = m_mouseXPos;
+		double dx = xPos - xPosPrev;
+		m_mouseXPos = xPos;
+
+		double windowWidth = static_cast<double>(m_windowWidth);
+
+		double rotateFactor = 360.0 / windowWidth;
+		double rotateAmount = dx * rotateFactor;
+
+		switch (static_cast<InteractionMode>(m_interactionMode)) {
+		case InteractionMode::RotateView:
+			if (m_leftMousePressed) {
+				m_viewRotate.x += rotateAmount;
+			}
+			if (m_middleMousePressed) {
+				m_viewRotate.y += rotateAmount;
+			}
+			if (m_rightMousePressed) {
+				m_viewRotate.z += rotateAmount;
+			}
+			break;
+		case InteractionMode::TranslateView:
+			if (m_leftMousePressed) {
+				m_viewTranslate.x += dx;
+			}
+			if (m_middleMousePressed) {
+				m_viewTranslate.y += dx;
+			}
+			if (m_rightMousePressed) {
+				m_viewTranslate.z += dx;
+			}
+			break;
+		case InteractionMode::Perspective:
+			if (m_leftMousePressed) {
+				const static float MinFOV = 5.0f;
+				const static float MaxFOV = 160.0f;
+
+				double fovFactor = ((MaxFOV - MinFOV) / 2) / windowWidth;
+				double fovAmount = dx * fovFactor;
+
+				m_fov += fovAmount;
+				m_fov = std::min(MaxFOV, m_fov);
+				m_fov = std::max(MinFOV, m_fov);
+			}
+			if (m_middleMousePressed) {
+				m_nearPlaneDistance += dx;
+			}
+			if (m_rightMousePressed) {
+				m_farPlaneDistance += dx;
+			}
+			break;
+		case InteractionMode::RotateModel:
+			if (m_leftMousePressed) {
+				m_modelRotate.x += rotateAmount;
+			}
+			if (m_middleMousePressed) {
+				m_modelRotate.y += rotateAmount;
+			}
+			if (m_rightMousePressed) {
+				m_modelRotate.z += rotateAmount;
+			}
+			break;
+		case InteractionMode::TranslateModel:
+			if (m_leftMousePressed) {
+				m_modelTranslate.x += dx;
+			}
+			if (m_middleMousePressed) {
+				m_modelTranslate.y += dx;
+			}
+			if (m_rightMousePressed) {
+				m_modelTranslate.z += dx;
+			}
+			break;
+		case InteractionMode::ScaleModel:
+			double scaleFactor = 2.0 / windowWidth;
+			double scaleAmount = dx * scaleFactor;
+
+			if (m_leftMousePressed) {
+				m_modelScale.x += scaleAmount;
+			}
+			if (m_middleMousePressed) {
+				m_modelScale.y += scaleAmount;
+			}
+			if (m_rightMousePressed) {
+				m_modelScale.z += scaleAmount;
+			}
+			break;
+		}
+	}
 
 	return eventHandled;
 }
@@ -331,7 +483,47 @@ bool A2::mouseButtonInputEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	if (!ImGui::IsMouseHoveringAnyWindow()) {
+
+		double xPos, yPos;
+		glfwGetCursorPos(m_window, &xPos, &yPos);
+		m_mouseXPos = xPos;
+
+		if (button == GLFW_MOUSE_BUTTON_1) {
+			if (actions == GLFW_PRESS) {
+				m_leftMousePressed = true;
+
+				m_mouseXDragOrigin = xPos;
+				m_mouseYDragOrigin = yPos;
+
+				eventHandled = true;
+			}
+			else if (actions == GLFW_RELEASE) {
+				m_leftMousePressed = false;
+				eventHandled = true;
+			}
+		}
+		if (button == GLFW_MOUSE_BUTTON_2) {
+			if (actions == GLFW_PRESS) {
+				m_rightMousePressed = true;
+				eventHandled = true;
+			}
+			else if (actions == GLFW_RELEASE) {
+				m_rightMousePressed = false;
+				eventHandled = true;
+			}
+		}
+		if (button == GLFW_MOUSE_BUTTON_3) {
+			if (actions == GLFW_PRESS) {
+				m_middleMousePressed = true;
+				eventHandled = true;
+			}
+			else if (actions == GLFW_RELEASE) {
+				m_middleMousePressed = false;
+				eventHandled = true;
+			}
+		}
+	}
 
 	return eventHandled;
 }
@@ -377,7 +569,16 @@ bool A2::keyInputEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	if (action == GLFW_PRESS) {
+		if (key == GLFW_KEY_R) {
+			reset();
+		}
+		if (key == GLFW_KEY_Q) {
+			quit();
+		}
+	}
+	else if (action == GLFW_RELEASE) {
+	}
 
 	return eventHandled;
 }

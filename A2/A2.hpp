@@ -60,6 +60,9 @@ protected:
 			const glm::vec2 & v1
 	);
 
+	void quit();
+	void reset();
+
 	ShaderProgram m_shader;
 
 	GLuint m_vao;            // Vertex Array Object
@@ -70,4 +73,23 @@ protected:
 
 	glm::vec3 m_currentLineColour;
 
+	glm::vec3 m_viewRotate;
+	glm::vec3 m_viewTranslate;
+	float m_fov;
+	float m_nearPlaneDistance;
+	float m_farPlaneDistance;
+
+	glm::vec3 m_modelRotate;
+	glm::vec3 m_modelTranslate;
+	glm::vec3 m_modelScale;
+
+	int m_interactionMode;
+
+	bool m_leftMousePressed;
+	bool m_middleMousePressed;
+	bool m_rightMousePressed;
+
+	double m_mouseXPos;
+	double m_mouseXDragOrigin;
+	double m_mouseYDragOrigin;
 };
