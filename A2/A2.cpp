@@ -13,15 +13,6 @@ using namespace std;
 using namespace glm;
 
 namespace {
-	enum class InteractionMode {
-		RotateView,
-		TranslateView,
-		Perspective,
-		RotateModel,
-		TranslateModel,
-		ScaleModel,
-		Viewport,
-	};
 	const static vector<char*> InteractionModeNames {
 		"Rotate View",
 		"Translate View",
@@ -32,6 +23,16 @@ namespace {
 		"Viewport",
 	};
 }
+
+enum class A2::InteractionMode {
+	RotateView,
+	TranslateView,
+	Perspective,
+	RotateModel,
+	TranslateModel,
+	ScaleModel,
+	Viewport,
+};
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -88,7 +89,7 @@ void A2::quit() {
 
 //----------------------------------------------------------------------------------------
 void A2::reset() {
-	m_interactionMode = static_cast<int>(InteractionMode::RotateModel);
+	setInteractionMode(InteractionMode::RotateModel);
 
 	m_viewRotate = glm::vec3();
 	m_viewTranslate = glm::vec3();
@@ -99,9 +100,27 @@ void A2::reset() {
 	m_modelTranslate = glm::vec3();
 	m_modelScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
+	m_viewportOrigin = glm::vec2(-0.95f, -0.95f);
+	m_viewportSize = glm::vec2(1.9f, 1.9f);
+}
+
+//----------------------------------------------------------------------------------------
+void A2::setInteractionMode(InteractionMode interactionMode) {
+	m_interactionMode = static_cast<int>(interactionMode);
+
 	m_leftMousePressed = false;
 	m_middleMousePressed = false;
 	m_rightMousePressed = false;
+	m_dragViewport = false;
+}
+
+//----------------------------------------------------------------------------------------
+glm::vec2 A2::screenCoordsToNDC(glm::vec2 screenCoords) const
+{
+	return glm::vec2(
+		2.0f * screenCoords.x / static_cast<float>(m_windowWidth),
+		2.0f * screenCoords.y / static_cast<float>(m_windowHeight)
+	);
 }
 
 //----------------------------------------------------------------------------------------
@@ -238,11 +257,14 @@ void A2::appLogic()
 
 	// Draw outer square:
 	setLineColour(vec3(1.0f, 0.7f, 0.8f));
-	drawLine(vec2(-0.5f, -0.5f), vec2(0.5f, -0.5f));
-	drawLine(vec2(0.5f, -0.5f), vec2(0.5f, 0.5f));
-	drawLine(vec2(0.5f, 0.5f), vec2(-0.5f, 0.5f));
-	drawLine(vec2(-0.5f, 0.5f), vec2(-0.5f, -0.5f));
-
+	float x = m_viewportOrigin.x;
+	float y = m_viewportOrigin.y;
+	float w = m_viewportSize.x;
+	float h = m_viewportSize.y;
+	drawLine(vec2(x, y), vec2(x + w, y));
+	drawLine(vec2(x + w, y), vec2(x + w, y - h));
+	drawLine(vec2(x + w, y - h), vec2(x, y - h));
+	drawLine(vec2(x, y - h), vec2(x, y));
 
 	// Draw inner square:
 	setLineColour(vec3(0.2f, 1.0f, 1.0f));
@@ -458,12 +480,15 @@ bool A2::mouseMoveEvent (
 
 			if (m_leftMousePressed) {
 				m_modelScale.x += scaleAmount;
+				m_modelScale.x = std::max(0.0f, m_modelScale.x);
 			}
 			if (m_middleMousePressed) {
 				m_modelScale.y += scaleAmount;
+				m_modelScale.y = std::max(0.0f, m_modelScale.y);
 			}
 			if (m_rightMousePressed) {
 				m_modelScale.z += scaleAmount;
+				m_modelScale.z = std::max(0.0f, m_modelScale.z);
 			}
 			break;
 		}
@@ -485,21 +510,41 @@ bool A2::mouseButtonInputEvent (
 
 	if (!ImGui::IsMouseHoveringAnyWindow()) {
 
-		double xPos, yPos;
-		glfwGetCursorPos(m_window, &xPos, &yPos);
-		m_mouseXPos = xPos;
+		glfwGetCursorPos(m_window, &m_mouseXPos, &m_mouseYPos);
 
 		if (button == GLFW_MOUSE_BUTTON_1) {
 			if (actions == GLFW_PRESS) {
 				m_leftMousePressed = true;
 
-				m_mouseXDragOrigin = xPos;
-				m_mouseYDragOrigin = yPos;
+				if (m_interactionMode == static_cast<int>(InteractionMode::Viewport)) {
+					m_mouseXDragOrigin = m_mouseXPos;
+					m_mouseYDragOrigin = m_mouseYPos;
+					m_dragViewport = true;
+				}
 
 				eventHandled = true;
 			}
 			else if (actions == GLFW_RELEASE) {
 				m_leftMousePressed = false;
+
+				if (m_interactionMode == static_cast<int>(InteractionMode::Viewport)) {
+					float xStart = std::min(m_mouseXPos, m_mouseXDragOrigin);
+					float yStart = std::min(m_mouseYPos, m_mouseYDragOrigin);
+					float xEnd = std::max(m_mouseXPos, m_mouseXDragOrigin);
+					float yEnd = std::max(m_mouseYPos, m_mouseYDragOrigin);
+
+					m_viewportOrigin = screenCoordsToNDC(glm::vec2(xStart, yStart));
+					m_viewportOrigin.x -= 1.0f;
+					m_viewportOrigin.y = 1.0f - m_viewportOrigin.y;
+
+					m_viewportSize = screenCoordsToNDC(glm::vec2(
+						xEnd - xStart,
+						yEnd - yStart
+					));
+
+					m_dragViewport = false;
+				}
+
 				eventHandled = true;
 			}
 		}
@@ -578,25 +623,25 @@ bool A2::keyInputEvent (
 			quit();
 			break;
 		case GLFW_KEY_O:
-			m_interactionMode = static_cast<int>(InteractionMode::RotateView);
+			setInteractionMode(InteractionMode::RotateView);
 			break;
 		case GLFW_KEY_N:
-			m_interactionMode = static_cast<int>(InteractionMode::TranslateView);
+			setInteractionMode(InteractionMode::TranslateView);
 			break;
 		case GLFW_KEY_P:
-			m_interactionMode = static_cast<int>(InteractionMode::Perspective);
+			setInteractionMode(InteractionMode::Perspective);
 			break;
 		case GLFW_KEY_R:
-			m_interactionMode = static_cast<int>(InteractionMode::RotateModel);
+			setInteractionMode(InteractionMode::RotateModel);
 			break;
 		case GLFW_KEY_T:
-			m_interactionMode = static_cast<int>(InteractionMode::TranslateModel);
+			setInteractionMode(InteractionMode::TranslateModel);
 			break;
 		case GLFW_KEY_S:
-			m_interactionMode = static_cast<int>(InteractionMode::ScaleModel);
+			setInteractionMode(InteractionMode::ScaleModel);
 			break;
 		case GLFW_KEY_V:
-			m_interactionMode = static_cast<int>(InteractionMode::Viewport);
+			setInteractionMode(InteractionMode::Viewport);
 			break;
 		}
 	}

@@ -27,6 +27,9 @@ public:
 
 
 class A2 : public CS488Window {
+protected:
+	enum class InteractionMode;
+
 public:
 	A2();
 	virtual ~A2();
@@ -63,6 +66,10 @@ protected:
 	void quit();
 	void reset();
 
+	void setInteractionMode(InteractionMode);
+
+	glm::vec2 screenCoordsToNDC(glm::vec2 screenCoords) const;
+
 	ShaderProgram m_shader;
 
 	GLuint m_vao;            // Vertex Array Object
@@ -83,13 +90,18 @@ protected:
 	glm::vec3 m_modelTranslate;
 	glm::vec3 m_modelScale;
 
+	glm::vec2 m_viewportOrigin; // top-left, NDC
+	glm::vec2 m_viewportSize; // NDC
+
 	int m_interactionMode;
 
 	bool m_leftMousePressed;
 	bool m_middleMousePressed;
 	bool m_rightMousePressed;
+	bool m_dragViewport;
 
 	double m_mouseXPos;
+	double m_mouseYPos;
 	double m_mouseXDragOrigin;
 	double m_mouseYDragOrigin;
 };
