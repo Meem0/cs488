@@ -570,11 +570,34 @@ bool A2::keyInputEvent (
 	bool eventHandled(false);
 
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_R) {
+		switch (key) {
+		case GLFW_KEY_A:
 			reset();
-		}
-		if (key == GLFW_KEY_Q) {
+			break;
+		case GLFW_KEY_Q:
 			quit();
+			break;
+		case GLFW_KEY_O:
+			m_interactionMode = static_cast<int>(InteractionMode::RotateView);
+			break;
+		case GLFW_KEY_N:
+			m_interactionMode = static_cast<int>(InteractionMode::TranslateView);
+			break;
+		case GLFW_KEY_P:
+			m_interactionMode = static_cast<int>(InteractionMode::Perspective);
+			break;
+		case GLFW_KEY_R:
+			m_interactionMode = static_cast<int>(InteractionMode::RotateModel);
+			break;
+		case GLFW_KEY_T:
+			m_interactionMode = static_cast<int>(InteractionMode::TranslateModel);
+			break;
+		case GLFW_KEY_S:
+			m_interactionMode = static_cast<int>(InteractionMode::ScaleModel);
+			break;
+		case GLFW_KEY_V:
+			m_interactionMode = static_cast<int>(InteractionMode::Viewport);
+			break;
 		}
 	}
 	else if (action == GLFW_RELEASE) {
