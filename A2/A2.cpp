@@ -374,6 +374,21 @@ void A2::drawClippedLine(vec2 A, vec2 B) {
 }
 
 //----------------------------------------------------------------------------------------
+vec2 A2::scaleToViewport(glm::vec2 point) const {
+	point.x = m_viewportOrigin.x + ((point.x + 1.0f) / 2.0f) * m_viewportSize.x;
+	point.y = m_viewportOrigin.y + ((point.y + 1.0f) / 2.0f) * m_viewportSize.y;
+	return point;
+}
+
+//----------------------------------------------------------------------------------------
+A2::Line2D A2::projectLine(vec4 A, vec4 B) {
+	return {
+		vec2(A.x, A.y),
+		vec2(B.x, B.y)
+	};
+}
+
+//----------------------------------------------------------------------------------------
 /*
  * Called once per frame, before guiLogic().
  */
@@ -404,6 +419,22 @@ void A2::appLogic()
 	// Draw inner square:
 	setLineColour(vec3(0.2f, 1.0f, 1.0f));
 	{
+		typedef array<unsigned int, 2> LineIndex;
+		const static unsigned int NumLines = 12;
+		const static array<LineIndex, NumLines> LineIndices {
+			LineIndex { 0, 1 },
+			LineIndex { 1, 5 },
+			LineIndex { 5, 4 },
+			LineIndex { 4, 0 },
+			LineIndex { 0, 2 },
+			LineIndex { 1, 3 },
+			LineIndex { 4, 6 },
+			LineIndex { 5, 7 },
+			LineIndex { 2, 3 },
+			LineIndex { 3, 7 },
+			LineIndex { 7, 6 },
+			LineIndex { 6, 2 }
+		};
 		const static unsigned int NumPoints = 8;
 		array<vec4, NumPoints> modelPoints = {
 			vec4(-0.5f, -0.5f, -0.5f, 1.0f), // 0 left-bottom-back
@@ -415,7 +446,7 @@ void A2::appLogic()
 			vec4(-0.5f, 0.5f, 0.5f, 1.0f),   // 6 left-top-front
 			vec4(0.5f, 0.5f, 0.5f, 1.0f),    // 7 right-top-front
 		};
-		array<vec2, NumPoints> p;
+		array<Line2D, NumLines> lines;
 
 		mat4 modelScale = scaleMatrix3D(m_modelScale);
 		mat4 viewRotate = rotateMatrix3D(m_viewRotate);
@@ -424,31 +455,21 @@ void A2::appLogic()
 		mat4 transform = viewTranslate * viewRotate * m_modelMat * modelScale;
 
 		for (int i = 0; i < modelPoints.size(); ++i) {
-			vec4 point = transform * modelPoints[i];
-
-			point.x = m_viewportOrigin.x + ((point.x + 1.0f) / 2.0f) * m_viewportSize.x;
-			point.y = m_viewportOrigin.y + ((point.y + 1.0f) / 2.0f) * m_viewportSize.y;
-
-			p[i] = vec2(point.x, point.y);
+			modelPoints[i] = transform * modelPoints[i];
 		}
 
-		// bottom
-		drawClippedLine(p[0], p[1]);
-		drawClippedLine(p[1], p[5]);
-		drawClippedLine(p[5], p[4]);
-		drawClippedLine(p[4], p[0]);
+		for (int i = 0; i < lines.size(); ++i) {
+			lines[i] = projectLine(
+				modelPoints[LineIndices[i][0]],
+				modelPoints[LineIndices[i][1]]
+			);
+		}
 
-		// verticals
-		drawClippedLine(p[0], p[2]);
-		drawClippedLine(p[1], p[3]);
-		drawClippedLine(p[4], p[6]);
-		drawClippedLine(p[5], p[7]);
-
-		// top
-		drawClippedLine(p[2], p[3]);
-		drawClippedLine(p[3], p[7]);
-		drawClippedLine(p[7], p[6]);
-		drawClippedLine(p[6], p[2]);
+		for (Line2D& line : lines) {
+			vec2 A = scaleToViewport(line[0]);
+			vec2 B = scaleToViewport(line[1]);
+			drawClippedLine(A, B);
+		}
 	}
 }
 
