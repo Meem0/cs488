@@ -180,7 +180,7 @@ void A2::reset() {
 	m_viewTranslate = glm::vec3();
 	m_fov = 30.0f;
 	m_nearPlaneDistance = 0.1f;
-	m_farPlaneDistance = 100.0f;
+	m_farPlaneDistance = 50.0f;
 	m_modelRotate = glm::vec3();
 	m_modelTranslate = glm::vec3();
 	m_modelScale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -399,12 +399,14 @@ vec2 A2::scaleToViewport(glm::vec2 point) const {
 void A2::drawPerspectiveLine(vec4 A, vec4 B) {
 	{
 		const static float CameraDepth = -1.0f;
-		vec3 P(0, 0, CameraDepth + m_nearPlaneDistance);
-		vec3 n(0, 0, 1.0f);
+		vec3 nearP(0, 0, CameraDepth + m_nearPlaneDistance);
+		vec3 farP(0, 0, CameraDepth + m_farPlaneDistance);
+		vec3 nearN(0, 0, 1.0f);
+		vec3 farN(0, 0, -1.0f);
 		vec3 a(A.x, A.y, A.z);
 		vec3 b(B.x, B.y, B.z);
 
-		if (!clip(a, b, P, n)) {
+		if (!clip(a, b, nearP, nearN) || !clip(a, b, farP, farN)) {
 			return;
 		}
 
@@ -678,7 +680,7 @@ bool A2::mouseMoveEvent (
 				const static float MinNearPlane = 0.001f;
 				const static float MaxNearPlane = 5.0f;
 
-				double nearPlaneFactor = ((MaxNearPlane - MinNearPlane) / 5.0f) / windowWidth;
+				double nearPlaneFactor = 1.0f / windowWidth;
 				double nearPlaneAmount = dx * nearPlaneFactor;
 
 				m_nearPlaneDistance += nearPlaneAmount;
@@ -686,7 +688,15 @@ bool A2::mouseMoveEvent (
 				m_nearPlaneDistance = std::max(MinNearPlane, m_nearPlaneDistance);
 			}
 			if (m_rightMousePressed) {
-				m_farPlaneDistance += dx;
+				const static float MinFarPlane = 10.0f;
+				const static float MaxFarPlane = 150.0f;
+
+				double farPlaneFactor = 20.0f / windowWidth;
+				double farPlaneAmount = dx * farPlaneFactor;
+
+				m_farPlaneDistance += farPlaneAmount;
+				m_farPlaneDistance = std::min(MaxFarPlane, m_farPlaneDistance);
+				m_farPlaneDistance = std::max(MinFarPlane, m_farPlaneDistance);
 			}
 			break;
 		case InteractionMode::RotateModel: {
