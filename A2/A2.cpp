@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 using namespace std;
 
 #include <imgui/imgui.h>
@@ -80,6 +81,27 @@ namespace {
 		"Scale Model",
 		"Viewport",
 	};
+
+	template<typename TVec>
+	bool clip(TVec& A, TVec& B, TVec P, TVec n) {
+		float wecA = glm::dot(A - P, n);
+		float wecB = glm::dot(B - P, n);
+
+		if (wecA < 0 && wecB < 0) {
+			return false;
+		}
+		if (!(wecA >= 0 && wecB >= 0)) {
+			float t = wecA / (wecA - wecB);
+			if (wecA < 0) {
+				A = A + t * (B - A);
+			}
+			else {
+				B = A + t * (B - A);
+			}
+		}
+
+		return true;
+	}
 }
 
 enum class A2::InteractionMode {
@@ -90,6 +112,11 @@ enum class A2::InteractionMode {
 	TranslateModel,
 	ScaleModel,
 	Viewport,
+};
+
+const A2::Line2D A2::NullLine{
+	vec2(numeric_limits<float>::min(), numeric_limits<float>::min()),
+	vec2(numeric_limits<float>::min(), numeric_limits<float>::min())
 };
 
 //----------------------------------------------------------------------------------------
@@ -353,20 +380,8 @@ void A2::drawClippedLine(vec2 A, vec2 B) {
 		vec2 P = points[i];
 		vec2 n = normals[i];
 
-		float wecA = glm::dot(A - P, n);
-		float wecB = glm::dot(B - P, n);
-
-		if (wecA < 0 && wecB < 0) {
+		if (!clip(A, B, P, n)) {
 			return;
-		}
-		if (!(wecA >= 0 && wecB >= 0)) {
-			float t = wecA / (wecA - wecB);
-			if (wecA < 0) {
-				A = A + t * (B - A);
-			}
-			else {
-				B = A + t * (B - A);
-			}
 		}
 	}
 
@@ -381,11 +396,29 @@ vec2 A2::scaleToViewport(glm::vec2 point) const {
 }
 
 //----------------------------------------------------------------------------------------
-A2::Line2D A2::projectLine(vec4 A, vec4 B) {
-	return {
-		vec2(A.x, A.y),
-		vec2(B.x, B.y)
-	};
+void A2::drawPerspectiveLine(vec4 A, vec4 B) {
+	{
+		const static float CameraDepth = -1.0f;
+		vec3 P(0, 0, CameraDepth + m_nearPlaneDistance);
+		vec3 n(0, 0, 1.0f);
+		vec3 a(A.x, A.y, A.z);
+		vec3 b(B.x, B.y, B.z);
+
+		if (!clip(a, b, P, n)) {
+			return;
+		}
+
+		A.x = a.x; A.y = a.y; A.z = a.z;
+		B.x = b.x; B.y = b.y; B.z = b.z;
+	}
+
+	vec2 A2(A.x, A.y);
+	vec2 B2(B.x, B.y);
+
+	A2 = scaleToViewport(A2);
+	B2 = scaleToViewport(B2);
+
+	drawClippedLine(A2, B2);
 }
 
 //----------------------------------------------------------------------------------------
@@ -446,7 +479,6 @@ void A2::appLogic()
 			vec4(-0.5f, 0.5f, 0.5f, 1.0f),   // 6 left-top-front
 			vec4(0.5f, 0.5f, 0.5f, 1.0f),    // 7 right-top-front
 		};
-		array<Line2D, NumLines> lines;
 
 		mat4 modelScale = scaleMatrix3D(m_modelScale);
 		mat4 viewRotate = rotateMatrix3D(m_viewRotate);
@@ -458,17 +490,11 @@ void A2::appLogic()
 			modelPoints[i] = transform * modelPoints[i];
 		}
 
-		for (int i = 0; i < lines.size(); ++i) {
-			lines[i] = projectLine(
-				modelPoints[LineIndices[i][0]],
-				modelPoints[LineIndices[i][1]]
+		for (const LineIndex& idx : LineIndices) {
+			drawPerspectiveLine(
+				modelPoints[idx[0]],
+				modelPoints[idx[1]]
 			);
-		}
-
-		for (Line2D& line : lines) {
-			vec2 A = scaleToViewport(line[0]);
-			vec2 B = scaleToViewport(line[1]);
-			drawClippedLine(A, B);
 		}
 	}
 }
@@ -641,7 +667,7 @@ bool A2::mouseMoveEvent (
 				const static float MinFOV = 5.0f;
 				const static float MaxFOV = 160.0f;
 
-				double fovFactor = ((MaxFOV - MinFOV) / 2) / windowWidth;
+				double fovFactor = ((MaxFOV - MinFOV) / 2.0f) / windowWidth;
 				double fovAmount = dx * fovFactor;
 
 				m_fov += fovAmount;
@@ -649,7 +675,15 @@ bool A2::mouseMoveEvent (
 				m_fov = std::max(MinFOV, m_fov);
 			}
 			if (m_middleMousePressed) {
-				m_nearPlaneDistance += dx;
+				const static float MinNearPlane = 0.001f;
+				const static float MaxNearPlane = 5.0f;
+
+				double nearPlaneFactor = ((MaxNearPlane - MinNearPlane) / 5.0f) / windowWidth;
+				double nearPlaneAmount = dx * nearPlaneFactor;
+
+				m_nearPlaneDistance += nearPlaneAmount;
+				m_nearPlaneDistance = std::min(MaxNearPlane, m_nearPlaneDistance);
+				m_nearPlaneDistance = std::max(MinNearPlane, m_nearPlaneDistance);
 			}
 			if (m_rightMousePressed) {
 				m_farPlaneDistance += dx;

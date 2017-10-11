@@ -32,6 +32,7 @@ class A2 : public CS488Window {
 protected:
 	enum class InteractionMode;
 	typedef std::array<glm::vec2, 2> Line2D;
+	const static Line2D NullLine;
 
 public:
 	A2();
@@ -74,7 +75,7 @@ protected:
 	void drawAlignedRect(glm::vec2 origin, glm::vec2 size);
 	void drawClippedLine(glm::vec2 A, glm::vec2 B);
 	glm::vec2 scaleToViewport(glm::vec2 point) const;
-	Line2D projectLine(glm::vec4 A, glm::vec4 B);
+	void drawPerspectiveLine(glm::vec4 A, glm::vec4 B);
 
 	void getDragBox(glm::vec2& origin, glm::vec2& size) const;
 
