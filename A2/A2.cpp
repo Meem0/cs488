@@ -25,12 +25,12 @@ namespace {
 		);
 	}
 
-	float radToDeg(float rad) {
+	float degToRad(float rad) {
 		return 2.0f * M_PI * rad / 360.0f;
 	}
 
 	glm::mat4 rotateMatrixX3D(float t) {
-		t = radToDeg(t);
+		t = degToRad(t);
 		return glm::mat4(
 			1.0f, 0, 0, 0,
 			0, cos(t), -sin(t), 0,
@@ -40,7 +40,7 @@ namespace {
 	}
 
 	glm::mat4 rotateMatrixY3D(float t) {
-		t = radToDeg(t);
+		t = degToRad(t);
 		return glm::mat4(
 			cos(t), 0, sin(t), 0,
 			0, 1.0f, 0, 0,
@@ -50,7 +50,7 @@ namespace {
 	}
 
 	glm::mat4 rotateMatrixZ3D(float t) {
-		t = radToDeg(t);
+		t = degToRad(t);
 		return glm::mat4(
 			cos(t), sin(t), 0, 0,
 			-sin(t), cos(t), 0, 0,
@@ -180,12 +180,12 @@ void A2::reset() {
 	m_viewTranslate = glm::vec3();
 	m_fov = 30.0f;
 	m_nearPlaneDistance = 0.1f;
-	m_farPlaneDistance = 50.0f;
+	m_farPlaneDistance = 20.0f;
 	m_modelRotate = glm::vec3();
-	m_modelTranslate = glm::vec3();
+	m_modelTranslate = glm::vec3(0, 0, 3.5f);
 	m_modelScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
-	m_modelMat = glm::mat4();
+	m_modelMat = rotateMatrix3D(m_modelRotate) * translateMatrix3D(m_modelTranslate);
 
 	m_viewportOrigin = glm::vec2(-0.95f, -0.95f);
 	m_viewportSize = glm::vec2(1.9f, 1.9f);
@@ -398,9 +398,8 @@ vec2 A2::scaleToViewport(glm::vec2 point) const {
 //----------------------------------------------------------------------------------------
 void A2::drawPerspectiveLine(vec4 A, vec4 B) {
 	{
-		const static float CameraDepth = -1.0f;
-		vec3 nearP(0, 0, CameraDepth + m_nearPlaneDistance);
-		vec3 farP(0, 0, CameraDepth + m_farPlaneDistance);
+		vec3 nearP(0, 0, m_nearPlaneDistance);
+		vec3 farP(0, 0, m_farPlaneDistance);
 		vec3 nearN(0, 0, 1.0f);
 		vec3 farN(0, 0, -1.0f);
 		vec3 a(A.x, A.y, A.z);
@@ -414,8 +413,21 @@ void A2::drawPerspectiveLine(vec4 A, vec4 B) {
 		B.x = b.x; B.y = b.y; B.z = b.z;
 	}
 
-	vec2 A2(A.x, A.y);
-	vec2 B2(B.x, B.y);
+	float cot = 1.0f / tan(degToRad(m_fov) / 2.0f);
+	float f = m_farPlaneDistance;
+	float n = m_nearPlaneDistance;
+	mat4 perspectiveMatrix(
+		cot / (m_viewportSize.x / m_viewportSize.y), 0, 0, 0,
+		0, cot, 0, 0,
+		0, 0, (f + n) / (f - n), 1.0f,
+		0, 0, -2.0f * f * n / (f - n), 0
+	);
+
+	vec4 aProjected = perspectiveMatrix * A;
+	vec4 bProjected = perspectiveMatrix * B;
+
+	vec2 A2(aProjected.x / aProjected.z, aProjected.y / aProjected.z);
+	vec2 B2(bProjected.x / bProjected.z, bProjected.y / bProjected.z);
 
 	A2 = scaleToViewport(A2);
 	B2 = scaleToViewport(B2);
@@ -492,11 +504,23 @@ void A2::appLogic()
 			modelPoints[i] = transform * modelPoints[i];
 		}
 
+		int r = 0, g = 0, b = 0;
 		for (const LineIndex& idx : LineIndices) {
+			setLineColour(vec3(static_cast<float>(r) / 2.0f, static_cast<float>(g) / 2.0f, static_cast<float>(b) / 2.0f));
 			drawPerspectiveLine(
 				modelPoints[idx[0]],
 				modelPoints[idx[1]]
 			);
+
+			++b;
+			if (b > 2) {
+				b = 0;
+				++g;
+				if (g > 2) {
+					g = 0;
+					++r;
+				}
+			}
 		}
 	}
 }
@@ -689,9 +713,9 @@ bool A2::mouseMoveEvent (
 			}
 			if (m_rightMousePressed) {
 				const static float MinFarPlane = 10.0f;
-				const static float MaxFarPlane = 150.0f;
+				const static float MaxFarPlane = 50.0f;
 
-				double farPlaneFactor = 20.0f / windowWidth;
+				double farPlaneFactor = 10.0f / windowWidth;
 				double farPlaneAmount = dx * farPlaneFactor;
 
 				m_farPlaneDistance += farPlaneAmount;
