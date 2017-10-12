@@ -1,0 +1,6 @@
+Compilation:
+	premake4 gmake
+	make
+
+Manual:
+	Only special thing to point out is that I'm missing the status line.  The near and far plane distances are shown numerically though.
