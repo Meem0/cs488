@@ -72,6 +72,16 @@ namespace {
 		);
 	}
 
+	glm::mat4 perspectiveMatrix3D(float f, float n, float fov, float aspect) {
+		float cot = 1.0f / tan(degToRad(fov) / 2.0f);
+		return mat4(
+			cot / aspect, 0, 0, 0,
+			0, cot, 0, 0,
+			0, 0, 1.0f, 1.0f,
+			0, 0, 1.0f, 0
+		);
+	}
+
 	const static vector<char*> InteractionModeNames {
 		"Rotate View",
 		"Translate View",
@@ -177,15 +187,15 @@ void A2::reset() {
 	setInteractionMode(InteractionMode::RotateModel);
 
 	m_viewRotate = glm::vec3();
-	m_viewTranslate = glm::vec3();
+	m_viewTranslate = glm::vec3(0, 0, 3.5f);
 	m_fov = 30.0f;
 	m_nearPlaneDistance = 0.1f;
 	m_farPlaneDistance = 20.0f;
 	m_modelRotate = glm::vec3();
-	m_modelTranslate = glm::vec3(0, 0, 3.5f);
+	m_modelTranslate = glm::vec3();
 	m_modelScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
-	m_modelMat = rotateMatrix3D(m_modelRotate) * translateMatrix3D(m_modelTranslate);
+	m_modelMat = rotateMatrix3D(m_modelRotate) * translateMatrix3D(m_modelTranslate) * scaleMatrix3D(m_modelScale);
 
 	m_viewportOrigin = glm::vec2(-0.95f, -0.95f);
 	m_viewportSize = glm::vec2(1.9f, 1.9f);
@@ -413,14 +423,11 @@ void A2::drawPerspectiveLine(vec4 A, vec4 B) {
 		B.x = b.x; B.y = b.y; B.z = b.z;
 	}
 
-	float cot = 1.0f / tan(degToRad(m_fov) / 2.0f);
-	float f = m_farPlaneDistance;
-	float n = m_nearPlaneDistance;
-	mat4 perspectiveMatrix(
-		cot / (m_viewportSize.x / m_viewportSize.y), 0, 0, 0,
-		0, cot, 0, 0,
-		0, 0, (f + n) / (f - n), 1.0f,
-		0, 0, -2.0f * f * n / (f - n), 0
+	mat4 perspectiveMatrix = perspectiveMatrix3D(
+		m_farPlaneDistance,
+		m_nearPlaneDistance,
+		m_fov,
+		m_viewportSize.x / m_viewportSize.y
 	);
 
 	vec4 aProjected = perspectiveMatrix * A;
@@ -464,11 +471,9 @@ void A2::appLogic()
 	}
 
 	// Draw inner square:
-	setLineColour(vec3(0.2f, 1.0f, 1.0f));
 	{
 		typedef array<unsigned int, 2> LineIndex;
-		const static unsigned int NumLines = 12;
-		const static array<LineIndex, NumLines> LineIndices {
+		const static array<LineIndex, 12> LineIndices {
 			LineIndex { 0, 1 },
 			LineIndex { 1, 5 },
 			LineIndex { 5, 4 },
@@ -482,8 +487,7 @@ void A2::appLogic()
 			LineIndex { 7, 6 },
 			LineIndex { 6, 2 }
 		};
-		const static unsigned int NumPoints = 8;
-		array<vec4, NumPoints> modelPoints = {
+		array<vec4, 16> points = {
 			vec4(-0.5f, -0.5f, -0.5f, 1.0f), // 0 left-bottom-back
 			vec4(0.5f, -0.5f, -0.5f, 1.0f),  // 1 right-bottom-back
 			vec4(-0.5f, 0.5f, -0.5f, 1.0f),  // 2 left-top-back
@@ -492,36 +496,76 @@ void A2::appLogic()
 			vec4(0.5f, -0.5f, 0.5f, 1.0f),   // 5 right-bottom-front
 			vec4(-0.5f, 0.5f, 0.5f, 1.0f),   // 6 left-top-front
 			vec4(0.5f, 0.5f, 0.5f, 1.0f),    // 7 right-top-front
+
+			vec4(0, 0, 0, 1.0f),             // 8  model gnomon origin
+			vec4(1.0f, 0, 0, 1.0f),          // 9  model gnomon x
+			vec4(0, 1.0f, 0, 1.0f),          // 10 model gnomon y
+			vec4(0, 0, 1.0f, 1.0f),          // 11 model gnomon z
+
+			vec4(0, 0, 0, 1.0f),             // 12 view gnomon origin
+			vec4(1.0f, 0, 0, 1.0f),          // 13 view gnomon x
+			vec4(0, 1.0f, 0, 1.0f),          // 14 view gnomon y
+			vec4(0, 0, 1.0f, 1.0f),          // 15 view gnomon z
 		};
 
+		mat4 gnomonScale = scaleMatrix3D(vec3(0.2f, 0.2f, 0.2f));
 		mat4 modelScale = scaleMatrix3D(m_modelScale);
 		mat4 viewRotate = rotateMatrix3D(m_viewRotate);
 		mat4 viewTranslate = translateMatrix3D(m_viewTranslate);
 
+		mat4 modelGnomonTransform = viewTranslate * viewRotate * m_modelMat * gnomonScale;
+		mat4 viewGnomonTransform = viewTranslate * viewRotate * gnomonScale;
 		mat4 transform = viewTranslate * viewRotate * m_modelMat * modelScale;
 
-		for (int i = 0; i < modelPoints.size(); ++i) {
-			modelPoints[i] = transform * modelPoints[i];
+		for (int i = 0; i < 8; ++i) {
+			points[i] = transform * points[i];
+		}
+		for (int i = 8; i < 12; ++i) {
+			points[i] = modelGnomonTransform * points[i];
+		}
+		for (int i = 12; i < 16; ++i) {
+			points[i] = viewGnomonTransform * points[i];
 		}
 
-		int r = 0, g = 0, b = 0;
+		setLineColour(vec3(0.2f, 1.0f, 1.0f));
 		for (const LineIndex& idx : LineIndices) {
-			setLineColour(vec3(static_cast<float>(r) / 2.0f, static_cast<float>(g) / 2.0f, static_cast<float>(b) / 2.0f));
 			drawPerspectiveLine(
-				modelPoints[idx[0]],
-				modelPoints[idx[1]]
+				points[idx[0]],
+				points[idx[1]]
 			);
-
-			++b;
-			if (b > 2) {
-				b = 0;
-				++g;
-				if (g > 2) {
-					g = 0;
-					++r;
-				}
-			}
 		}
+
+		setLineColour(vec3(1.0f, 0, 0));
+		drawPerspectiveLine(
+			points[8],
+			points[9]
+		);
+		setLineColour(vec3(0, 0, 1.0f));
+		drawPerspectiveLine(
+			points[8],
+			points[10]
+		);
+		setLineColour(vec3(0, 1.0f, 0));
+		drawPerspectiveLine(
+			points[8],
+			points[11]
+		);
+
+		setLineColour(vec3(0.8f, 0.2f, 0.2f));
+		drawPerspectiveLine(
+			points[12],
+			points[13]
+		);
+		setLineColour(vec3(0.2f, 0.2f, 0.8f));
+		drawPerspectiveLine(
+			points[12],
+			points[14]
+		);
+		setLineColour(vec3(0.2f, 0.8f, 0.2f));
+		drawPerspectiveLine(
+			points[12],
+			points[15]
+		);
 	}
 }
 
