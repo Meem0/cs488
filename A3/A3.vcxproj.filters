@@ -13,5 +13,195 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="shared">
+      <UniqueIdentifier>{389f6ead-3c81-4693-a590-daa7a67293df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\cs488-framework">
+      <UniqueIdentifier>{eb537129-e976-49b9-913d-2b1126c86419}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\gl3w">
+      <UniqueIdentifier>{253dfe69-f12f-4870-8935-4ee4f7b5d397}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\gl3w\GL">
+      <UniqueIdentifier>{15dd49f9-eee8-4846-8c84-54d17bb5eed6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\imgui">
+      <UniqueIdentifier>{40a5fcc9-1a91-415f-82f7-59d880f0d7d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\lua">
+      <UniqueIdentifier>{b65a59c4-f633-490d-bbe8-7433ca81f362}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\shared\cs488-framework\CS488Window.cpp">
+      <Filter>shared\cs488-framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\cs488-framework\GlErrorCheck.cpp">
+      <Filter>shared\cs488-framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\cs488-framework\MeshConsolidator.cpp">
+      <Filter>shared\cs488-framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\cs488-framework\ObjFileDecoder.cpp">
+      <Filter>shared\cs488-framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\cs488-framework\ShaderProgram.cpp">
+      <Filter>shared\cs488-framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\gl3w\GL\gl3w.c">
+      <Filter>shared\gl3w\GL</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui_demo.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui_draw.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui_impl_glfw_gl3.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lstate.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lapi.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lauxlib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lbaselib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lbitlib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lcode.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lcorolib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lctype.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\ldblib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\ldebug.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\ldo.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\ldump.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lfunc.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lgc.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\linit.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\liolib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\llex.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lmathlib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lmem.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\loadlib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lobject.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lopcodes.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\loslib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lparser.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lstring.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lstrlib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\ltable.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\ltablib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\ltm.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lundump.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lutf8lib.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lvm.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\lua-5.3.1\src\lzio.c">
+      <Filter>shared\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="A3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="JointNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scene_lua.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lua488.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="A3.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryNode.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JointNode.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene_lua.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneNode.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B3DD9094-0D7C-44D1-8352-1545B797CCF6}</ProjectGuid>
+    <ProjectGuid>{2A9911D8-E8EF-4C41-B0BE-62AB63EC58A1}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>A3</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
@@ -58,15 +58,19 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\gl.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\gl.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\gl.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\gl.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -142,6 +146,64 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\shared\cs488-framework\CS488Window.cpp" />
+    <ClCompile Include="..\shared\cs488-framework\GlErrorCheck.cpp" />
+    <ClCompile Include="..\shared\cs488-framework\MeshConsolidator.cpp" />
+    <ClCompile Include="..\shared\cs488-framework\ObjFileDecoder.cpp" />
+    <ClCompile Include="..\shared\cs488-framework\ShaderProgram.cpp" />
+    <ClCompile Include="..\shared\gl3w\GL\gl3w.c" />
+    <ClCompile Include="..\shared\imgui\imgui.cpp" />
+    <ClCompile Include="..\shared\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\shared\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\shared\imgui\imgui_impl_glfw_gl3.cpp" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lapi.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lauxlib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lbaselib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lbitlib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lcode.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lcorolib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lctype.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\ldblib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\ldebug.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\ldo.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\ldump.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lfunc.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lgc.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\linit.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\liolib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\llex.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lmathlib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lmem.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\loadlib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lobject.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lopcodes.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\loslib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lparser.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lstate.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lstring.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lstrlib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\ltable.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\ltablib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\ltm.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lundump.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lutf8lib.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lvm.c" />
+    <ClCompile Include="..\shared\lua-5.3.1\src\lzio.c" />
+    <ClCompile Include="A3.cpp" />
+    <ClCompile Include="GeometryNode.cpp" />
+    <ClCompile Include="JointNode.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="SceneNode.cpp" />
+    <ClCompile Include="scene_lua.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="A3.hpp" />
+    <ClInclude Include="GeometryNode.hpp" />
+    <ClInclude Include="JointNode.hpp" />
+    <ClInclude Include="lua488.hpp" />
+    <ClInclude Include="Material.hpp" />
+    <ClInclude Include="SceneNode.hpp" />
+    <ClInclude Include="scene_lua.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
