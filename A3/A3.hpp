@@ -11,12 +11,23 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <functional>
 
 struct LightSource {
 	glm::vec3 position;
 	glm::vec3 rgbIntensity;
 };
 
+class GeometryNode;
+class JointNode;
+
+// ridiculous solution to not wanting node type enum
+// plus not wanting to make any new files
+class IRenderSceneNode {
+public:
+	virtual void renderSceneNode(const GeometryNode& node) = 0;
+	virtual void renderSceneNode(const JointNode& node) = 0;
+};
 
 class A3 : public CS488Window {
 public:
@@ -50,6 +61,8 @@ protected:
 	void initPerspectiveMatrix();
 	void uploadCommonSceneUniforms();
 	void renderSceneGraph(const SceneNode &node);
+	void renderSceneNode(const GeometryNode& node);
+	void renderSceneNode(const JointNode& node);
 	void renderArcCircle();
 
 	glm::mat4 m_perpsective;
@@ -78,5 +91,17 @@ protected:
 
 	std::string m_luaSceneFile;
 
-	std::shared_ptr<SceneNode> m_rootNode;
+	std::unique_ptr<SceneNode> m_rootNode;
+
+private:
+	class RenderSceneNode : public IRenderSceneNode {
+	public:
+		RenderSceneNode(A3& a3);
+
+		virtual void renderSceneNode(const GeometryNode & node) override;
+		virtual void renderSceneNode(const JointNode & node) override;
+	private:
+		A3& m_a3;
+	};
+	RenderSceneNode m_renderSceneNode;
 };

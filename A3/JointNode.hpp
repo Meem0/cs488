@@ -7,13 +7,19 @@ public:
 	JointNode(const std::string & name);
 	virtual ~JointNode();
 
-	void set_joint_x(double min, double init, double max);
-	void set_joint_y(double min, double init, double max);
+	virtual void draw(IRenderSceneNode& render) const override;
 
+	void setJointX(double min, double init, double max);
+	void setJointY(double min, double init, double max);
+
+protected:
+	virtual std::string getDebugString() const override;
+
+private:
 	struct JointRange {
 		double min, init, max;
 	};
 
-
-	JointRange m_joint_x, m_joint_y;
+	JointRange m_jointX;
+	JointRange m_jointY;
 };

@@ -1,10 +1,11 @@
 #include "JointNode.hpp"
 
+#include "A3.hpp"
+
 //---------------------------------------------------------------------------------------
 JointNode::JointNode(const std::string& name)
 	: SceneNode(name)
 {
-	m_nodeType = NodeType::JointNode;
 }
 
 //---------------------------------------------------------------------------------------
@@ -12,15 +13,26 @@ JointNode::~JointNode() {
 
 }
  //---------------------------------------------------------------------------------------
-void JointNode::set_joint_x(double min, double init, double max) {
-	m_joint_x.min = min;
-	m_joint_x.init = init;
-	m_joint_x.max = max;
+void JointNode::setJointX(double min, double init, double max) {
+	m_jointX.min = min;
+	m_jointX.init = init;
+	m_jointX.max = max;
 }
 
 //---------------------------------------------------------------------------------------
-void JointNode::set_joint_y(double min, double init, double max) {
-	m_joint_y.min = min;
-	m_joint_y.init = init;
-	m_joint_y.max = max;
+void JointNode::setJointY(double min, double init, double max) {
+	m_jointY.min = min;
+	m_jointY.init = init;
+	m_jointY.max = max;
+}
+
+std::string JointNode::getDebugString() const
+{
+	return "JointNode";
+}
+
+void JointNode::draw(IRenderSceneNode& render) const
+{
+	render.renderSceneNode(*this);
+	SceneNode::draw(render);
 }

@@ -13,64 +13,43 @@ using namespace glm;
 
 
 // Static class variable
-unsigned int SceneNode::nodeInstanceCount = 0;
+unsigned int SceneNode::s_nodeInstanceCount = 0;
 
 
 //---------------------------------------------------------------------------------------
 SceneNode::SceneNode(const std::string& name)
   : m_name(name),
-	m_nodeType(NodeType::SceneNode),
-	trans(mat4()),
-	isSelected(false),
-	m_nodeId(nodeInstanceCount++)
+	m_trans(mat4()),
+	m_isSelected(false),
+	m_nodeId(s_nodeInstanceCount++)
 {
 
-}
-
-//---------------------------------------------------------------------------------------
-// Deep copy
-SceneNode::SceneNode(const SceneNode & other)
-	: m_nodeType(other.m_nodeType),
-	  m_name(other.m_name),
-	  trans(other.trans),
-	  invtrans(other.invtrans)
-{
-	for(SceneNode * child : other.children) {
-		this->children.push_front(new SceneNode(*child));
-	}
 }
 
 //---------------------------------------------------------------------------------------
 SceneNode::~SceneNode() {
-	for(SceneNode * child : children) {
-		delete child;
-	}
 }
 
 //---------------------------------------------------------------------------------------
-void SceneNode::set_transform(const glm::mat4& m) {
-	trans = m;
-	invtrans = m;
+void SceneNode::setTransform(const glm::mat4& m) {
+	m_trans = m;
+	m_invtrans = m;
 }
 
 //---------------------------------------------------------------------------------------
-const glm::mat4& SceneNode::get_transform() const {
-	return trans;
+const glm::mat4& SceneNode::getTransform() const {
+	return m_trans;
 }
 
 //---------------------------------------------------------------------------------------
-const glm::mat4& SceneNode::get_inverse() const {
-	return invtrans;
+const glm::mat4& SceneNode::getInverse() const {
+	return m_invtrans;
 }
 
 //---------------------------------------------------------------------------------------
 void SceneNode::add_child(SceneNode* child) {
-	children.push_back(child);
-}
-
-//---------------------------------------------------------------------------------------
-void SceneNode::remove_child(SceneNode* child) {
-	children.remove(child);
+	unique_ptr<SceneNode> ptr(child);
+	m_children.push_back(move(ptr));
 }
 
 //---------------------------------------------------------------------------------------
@@ -91,40 +70,42 @@ void SceneNode::rotate(char axis, float angle) {
 			break;
 	}
 	mat4 rot_matrix = glm::rotate(degreesToRadians(angle), rot_axis);
-	trans = rot_matrix * trans;
+	m_trans = rot_matrix * m_trans;
 }
 
 //---------------------------------------------------------------------------------------
 void SceneNode::scale(const glm::vec3 & amount) {
-	trans = glm::scale(amount) * trans;
+	m_trans = glm::scale(amount) * m_trans;
 }
 
 //---------------------------------------------------------------------------------------
 void SceneNode::translate(const glm::vec3& amount) {
-	trans = glm::translate(amount) * trans;
+	m_trans = glm::translate(amount) * m_trans;
+}
+
+void SceneNode::draw(IRenderSceneNode& render) const
+{
+	for (const auto& child : m_children) {
+		child->draw(render);
+	}
+}
+
+std::string SceneNode::getDebugString() const
+{
+	return "SceneNode";
 }
 
 
 //---------------------------------------------------------------------------------------
 int SceneNode::totalSceneNodes() const {
-	return nodeInstanceCount;
+	return s_nodeInstanceCount;
 }
 
 //---------------------------------------------------------------------------------------
 std::ostream & operator << (std::ostream & os, const SceneNode & node) {
 
 	//os << "SceneNode:[NodeType: ___, name: ____, id: ____, isSelected: ____, transform: ____"
-	switch (node.m_nodeType) {
-		case NodeType::SceneNode:
-			os << "SceneNode";
-			break;
-		case NodeType::GeometryNode:
-			os << "GeometryNode";
-			break;
-		case NodeType::JointNode:
-			os << "JointNode";
-			break;
-	}
+	os << node.getDebugString();
 	os << ":[";
 
 	os << "name:" << node.m_name << ", ";

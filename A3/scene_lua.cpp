@@ -127,8 +127,8 @@ int gr_joint_cmd(lua_State* L)
     lua_pop(L, 2);
   }
 
-  node->set_joint_x(x[0], x[1], x[2]);
-  node->set_joint_y(y[0], y[1], y[2]);
+  node->setJointX(x[0], x[1], x[2]);
+  node->setJointY(y[0], y[1], y[2]);
 
   data->node = node;
 
@@ -236,9 +236,10 @@ int gr_node_set_material_cmd(lua_State* L)
   luaL_argcheck(L, matdata != 0, 2, "Material expected");
 
 	Material * material = matdata->material;
-	self->material.kd = material->kd;
-	self->material.ks = material->ks;
-	self->material.shininess = material->shininess;
+	Material& nodeMaterial = self->getMaterial();
+	nodeMaterial.kd = material->kd;
+	nodeMaterial.ks = material->ks;
+	nodeMaterial.shininess = material->shininess;
 
   return 0;
 }

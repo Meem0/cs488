@@ -22,16 +22,16 @@ const size_t CIRCLE_PTS = 48;
 //----------------------------------------------------------------------------------------
 // Constructor
 A3::A3(const std::string & luaSceneFile)
-	: m_luaSceneFile(luaSceneFile),
-	  m_positionAttribLocation(0),
-	  m_normalAttribLocation(0),
-	  m_vao_meshData(0),
-	  m_vbo_vertexPositions(0),
-	  m_vbo_vertexNormals(0),
-	  m_vao_arcCircle(0),
-	  m_vbo_arcCircle(0)
+	: m_luaSceneFile(luaSceneFile)
+	, m_positionAttribLocation(0)
+	, m_normalAttribLocation(0)
+	, m_vao_meshData(0)
+	, m_vbo_vertexPositions(0)
+	, m_vbo_vertexNormals(0)
+	, m_vao_arcCircle(0)
+	, m_vbo_arcCircle(0)
+	, m_renderSceneNode(*this)
 {
-
 }
 
 //----------------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ A3::~A3()
 void A3::init()
 {
 	// Set the background colour.
-	glClearColor(0.35, 0.35, 0.35, 1.0);
+	glClearColor(0.35f, 0.35f, 0.35f, 1.0f);
 
 	createShaderProgram();
 
@@ -100,7 +100,7 @@ void A3::processLuaSceneFile(const std::string & filename) {
 
 	// This version of the code treats the main program argument
 	// as a straightforward pathname.
-	m_rootNode = std::shared_ptr<SceneNode>(import_lua(filename));
+	m_rootNode.reset(import_lua(filename));
 	if (!m_rootNode) {
 		std::cerr << "Could not open " << filename << std::endl;
 	}
@@ -191,7 +191,7 @@ void A3::uploadVertexDataToVbos (
 
 		float *pts = new float[ 2 * CIRCLE_PTS ];
 		for( size_t idx = 0; idx < CIRCLE_PTS; ++idx ) {
-			float ang = 2.0 * M_PI * float(idx) / CIRCLE_PTS;
+			float ang = 2.0f * float(M_PI) * float(idx) / CIRCLE_PTS;
 			pts[2*idx] = cos( ang );
 			pts[2*idx+1] = sin( ang );
 		}
@@ -351,7 +351,7 @@ static void updateShaderUniforms(
 	{
 		//-- Set ModelView matrix:
 		GLint location = shader.getUniformLocation("ModelView");
-		mat4 modelView = viewMatrix * node.trans;
+		mat4 modelView = viewMatrix * node.getTransform();
 		glUniformMatrix4fv(location, 1, GL_FALSE, value_ptr(modelView));
 		CHECK_GL_ERRORS;
 
@@ -364,15 +364,15 @@ static void updateShaderUniforms(
 
 		//-- Set Material values:
 		location = shader.getUniformLocation("material.kd");
-		vec3 kd = node.material.kd;
+		vec3 kd = node.getMaterial().kd;
 		glUniform3fv(location, 1, value_ptr(kd));
 		CHECK_GL_ERRORS;
 		location = shader.getUniformLocation("material.ks");
-		vec3 ks = node.material.ks;
+		vec3 ks = node.getMaterial().ks;
 		glUniform3fv(location, 1, value_ptr(ks));
 		CHECK_GL_ERRORS;
 		location = shader.getUniformLocation("material.shininess");
-		glUniform1f(location, node.material.shininess);
+		glUniform1f(location, node.getMaterial().shininess);
 		CHECK_GL_ERRORS;
 
 	}
@@ -413,27 +413,27 @@ void A3::renderSceneGraph(const SceneNode & root) {
 	// could put a set of mutually recursive functions in this class, which
 	// walk down the tree from nodes of different types.
 
-	for (const SceneNode * node : root.children) {
-
-		if (node->m_nodeType != NodeType::GeometryNode)
-			continue;
-
-		const GeometryNode * geometryNode = static_cast<const GeometryNode *>(node);
-
-		updateShaderUniforms(m_shader, *geometryNode, m_view);
-
-
-		// Get the BatchInfo corresponding to the GeometryNode's unique MeshId.
-		BatchInfo batchInfo = m_batchInfoMap[geometryNode->meshId];
-
-		//-- Now render the mesh:
-		m_shader.enable();
-		glDrawArrays(GL_TRIANGLES, batchInfo.startIndex, batchInfo.numIndices);
-		m_shader.disable();
-	}
+	root.draw(m_renderSceneNode);
 
 	glBindVertexArray(0);
 	CHECK_GL_ERRORS;
+}
+
+void A3::renderSceneNode(const GeometryNode & node)
+{
+	updateShaderUniforms(m_shader, node, m_view);
+
+	// Get the BatchInfo corresponding to the GeometryNode's unique MeshId.
+	BatchInfo batchInfo = m_batchInfoMap[node.getMeshID()];
+
+	//-- Now render the mesh:
+	m_shader.enable();
+	glDrawArrays(GL_TRIANGLES, batchInfo.startIndex, batchInfo.numIndices);
+	m_shader.disable();
+}
+
+void A3::renderSceneNode(const JointNode & node)
+{
 }
 
 //----------------------------------------------------------------------------------------
@@ -560,4 +560,19 @@ bool A3::keyInputEvent (
 	// Fill in with event handling code...
 
 	return eventHandled;
+}
+
+A3::RenderSceneNode::RenderSceneNode(A3 & a3)
+	: m_a3(a3)
+{
+}
+
+void A3::RenderSceneNode::renderSceneNode(const GeometryNode & node)
+{
+	m_a3.renderSceneNode(node);
+}
+
+void A3::RenderSceneNode::renderSceneNode(const JointNode & node)
+{
+	m_a3.renderSceneNode(node);
 }

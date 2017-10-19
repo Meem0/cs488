@@ -9,9 +9,19 @@ public:
 		const std::string & name
 	);
 
-	Material material;
+	virtual void draw(IRenderSceneNode& render) const override;
+
+	Material& getMaterial();
+	const Material& getMaterial() const;
+	const std::string& getMeshID() const;
+
+protected:
+	virtual std::string getDebugString() const;
+
+private:
+	Material m_material;
 
 	// Mesh Identifier. This must correspond to an object name of
 	// a loaded .obj file.
-	std::string meshId;
+	std::string m_meshId;
 };
