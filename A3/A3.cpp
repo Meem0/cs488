@@ -31,6 +31,11 @@ A3::A3(const std::string & luaSceneFile)
 	, m_vao_arcCircle(0)
 	, m_vbo_arcCircle(0)
 	, m_renderSceneNode(*this)
+	, m_drawCircle(false)
+	, m_useZBuffer(true)
+	, m_backfaceCulling(false)
+	, m_frontfaceCulling(false)
+	, m_jointMode(0)
 {
 }
 
@@ -83,7 +88,10 @@ void A3::init()
 
 	initLightSources();
 
-	reset();
+	m_transformStack.clear();
+	m_transformStack.push_back(glm::mat4());
+
+	resetAll();
 
 	// Exiting the current scope calls delete automatically on meshConsolidator freeing
 	// all vertex data resources.  This is fine since we already copied this data to
@@ -320,23 +328,67 @@ void A3::guiLogic()
 	}
 
 	static bool showDebugWindow(true);
-	ImGuiWindowFlags windowFlags(ImGuiWindowFlags_AlwaysAutoResize);
+	ImGuiWindowFlags windowFlags(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysAutoResize);
 	float opacity(0.5f);
 
-	ImGui::Begin("Properties", &showDebugWindow, ImVec2(100,100), opacity,
-			windowFlags);
+	ImGui::Begin("Properties", &showDebugWindow, ImVec2(550,550), opacity, windowFlags);
+	{
+		if (ImGui::BeginMenuBar()) {
 
+			if (ImGui::BeginMenu("Application")) {
+				if (ImGui::MenuItem("Reset Position (I)")) {
+					resetPosition();
+				}
+				if (ImGui::MenuItem("Reset Orientation (O)")) {
+					resetOrientation();
+				}
+				if (ImGui::MenuItem("Reset Joints (N)")) {
+					resetJoints();
+				}
+				if (ImGui::MenuItem("Reset All (A)")) {
+					resetAll();
+				}
+				if (ImGui::MenuItem("Quit (Q)")) {
+					quit();
+				}
 
-		// Add more gui elements here here ...
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Edit")) {
+				if (ImGui::MenuItem("Undo (U)", nullptr, nullptr, canUndo())) {
+					undo();
+				}
+				if (ImGui::MenuItem("Redo (R)", nullptr, nullptr, canRedo())) {
+					redo();
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Options")) {
+				if (ImGui::MenuItem("Circle (C)", nullptr, &m_drawCircle)) {
+				}
+				if (ImGui::MenuItem("Z-buffer (Z)", nullptr, &m_useZBuffer)) {
+				}
+				if (ImGui::MenuItem("Backface culling (B)", nullptr, &m_backfaceCulling)) {
+				}
+				if (ImGui::MenuItem("Frontface culling (F)", nullptr, &m_frontfaceCulling)) {
+				}
+				ImGui::EndMenu();
+			}
 
-
-		// Create Button, and check if it was clicked:
-		if( ImGui::Button( "Quit Application" ) ) {
-			glfwSetWindowShouldClose(m_window, GL_TRUE);
+			ImGui::EndMenuBar();
 		}
 
-		ImGui::Text( "Framerate: %.1f FPS", ImGui::GetIO().Framerate );
+		ImGui::PushID(0);
+		if (ImGui::RadioButton("Position/Orientation (P)", &m_jointMode, 0)) {
+		}
+		ImGui::PopID();
+		ImGui::PushID(1);
+		if (ImGui::RadioButton("Joints (J)", &m_jointMode, 1)) {
+		}
+		ImGui::PopID();
 
+		ImGui::Text("Framerate: %.1f FPS", ImGui::GetIO().Framerate);
+	}
 	ImGui::End();
 }
 
@@ -470,9 +522,62 @@ void A3::renderArcCircle() {
 	CHECK_GL_ERRORS;
 }
 
-void A3::reset() {
-	m_transformStack.clear();
-	m_transformStack.push_back(glm::mat4());
+void A3::resetPosition() {
+}
+
+void A3::resetOrientation() {
+}
+
+void A3::resetJoints() {
+	m_commandStack.clear();
+	m_commandStackPosition = 0;
+}
+
+void A3::resetAll() {
+	resetPosition();
+	resetOrientation();
+	resetJoints();
+}
+
+void A3::quit() {
+	glfwSetWindowShouldClose(m_window, GL_TRUE);
+}
+
+void A3::undo()
+{
+}
+
+void A3::redo()
+{
+}
+
+bool A3::canUndo() const {
+	return m_commandStackPosition > 0;
+}
+
+bool A3::canRedo() const
+{
+	return m_commandStackPosition < m_commandStack.size();
+}
+
+bool A3::drawCircle() const {
+	return m_drawCircle;
+}
+
+bool A3::useZBuffer() const {
+	return m_useZBuffer;
+}
+
+bool A3::backfaceCulling() const {
+	return m_backfaceCulling;
+}
+
+bool A3::frontfaceCuling() const {
+	return m_frontfaceCulling;
+}
+
+bool A3::jointMode() const {
+	return m_jointMode;
 }
 
 void A3::pushMatrix() {
@@ -585,8 +690,63 @@ bool A3::keyInputEvent (
 			show_gui = !show_gui;
 			eventHandled = true;
 		}
+		if (key == GLFW_KEY_I) {
+			resetPosition();
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_O) {
+			resetOrientation();
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_N) {
+			resetJoints();
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_A) {
+			resetAll();
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_Q) {
+			quit();
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_U) {
+			if (canUndo()) {
+				undo();
+			}
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_R) {
+			if (canRedo()) {
+				redo();
+			}
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_C) {
+			m_drawCircle = !m_drawCircle;
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_Z) {
+			m_useZBuffer = !m_useZBuffer;
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_B) {
+			m_backfaceCulling = !m_backfaceCulling;
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_F) {
+			m_frontfaceCulling = !m_frontfaceCulling;
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_P) {
+			m_jointMode = 0;
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_J) {
+			m_jointMode = 1;
+			eventHandled = true;
+		}
 	}
-	// Fill in with event handling code...
 
 	return eventHandled;
 }

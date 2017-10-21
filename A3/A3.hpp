@@ -98,7 +98,24 @@ protected:
 	std::unique_ptr<SceneNode> m_rootNode;
 
 private:
-	void reset();
+	void resetPosition();
+	void resetOrientation();
+	void resetJoints();
+	void resetAll();
+	void quit();
+
+	void undo();
+	void redo();
+
+	bool canUndo() const;
+	bool canRedo() const;
+
+	bool drawCircle() const;
+	bool useZBuffer() const;
+	bool backfaceCulling() const;
+	bool frontfaceCuling() const;
+
+	bool jointMode() const;
 
 	void pushMatrix();
 	void popMatrix();
@@ -119,4 +136,14 @@ private:
 	RenderSceneNode m_renderSceneNode;
 
 	std::vector<glm::mat4> m_transformStack;
+
+	std::vector<int> m_commandStack;
+	unsigned int m_commandStackPosition;
+
+	bool m_drawCircle;
+	bool m_useZBuffer;
+	bool m_backfaceCulling;
+	bool m_frontfaceCulling;
+
+	int m_jointMode;
 };
