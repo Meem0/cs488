@@ -441,12 +441,15 @@ static void updateShaderUniforms(
 void A3::draw() {
 	updateCulling();
 
-	glEnable( GL_DEPTH_TEST );
+	if (useZBuffer()) {
+		glEnable(GL_DEPTH_TEST);
+	}
 	renderSceneGraph(*m_rootNode);
 
-
-	glDisable( GL_DEPTH_TEST );
-	renderArcCircle();
+	if (drawCircle()) {
+		glDisable(GL_DEPTH_TEST);
+		renderArcCircle();
+	}
 }
 
 //----------------------------------------------------------------------------------------
