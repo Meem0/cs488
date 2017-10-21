@@ -34,5 +34,5 @@ std::string JointNode::getDebugString() const
 void JointNode::draw(IRenderSceneNode& render) const
 {
 	render.renderSceneNode(*this);
-	SceneNode::draw(render);
+	SceneNode::drawCommon(render);
 }

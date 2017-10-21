@@ -38,6 +38,8 @@ public:
 protected:
 	virtual std::string getDebugString() const;
 
+	void drawCommon(IRenderSceneNode& render) const;
+
 private:
 	SceneNode(const SceneNode & other) = delete;
 

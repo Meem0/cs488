@@ -83,6 +83,7 @@ void A3::init()
 
 	initLightSources();
 
+	reset();
 
 	// Exiting the current scope calls delete automatically on meshConsolidator freeing
 	// all vertex data resources.  This is fine since we already copied this data to
@@ -344,14 +345,15 @@ void A3::guiLogic()
 static void updateShaderUniforms(
 		const ShaderProgram & shader,
 		const GeometryNode & node,
-		const glm::mat4 & viewMatrix
+		const glm::mat4 & viewMatrix,
+		const glm::mat4 & modelMatrix
 ) {
 
 	shader.enable();
 	{
 		//-- Set ModelView matrix:
 		GLint location = shader.getUniformLocation("ModelView");
-		mat4 modelView = viewMatrix * node.getTransform();
+		mat4 modelView = viewMatrix * modelMatrix;
 		glUniformMatrix4fv(location, 1, GL_FALSE, value_ptr(modelView));
 		CHECK_GL_ERRORS;
 
@@ -419,9 +421,15 @@ void A3::renderSceneGraph(const SceneNode & root) {
 	CHECK_GL_ERRORS;
 }
 
-void A3::renderSceneNode(const GeometryNode & node)
-{
-	updateShaderUniforms(m_shader, node, m_view);
+void A3::renderSceneNode(const SceneNode & node) {
+	pushMatrix();
+	multMatrix(node.getTransform());
+}
+
+void A3::renderSceneNode(const GeometryNode & node) {
+	renderSceneNode(static_cast<const SceneNode&>(node));
+
+	updateShaderUniforms(m_shader, node, m_view, m_transformStack.back());
 
 	// Get the BatchInfo corresponding to the GeometryNode's unique MeshId.
 	BatchInfo batchInfo = m_batchInfoMap[node.getMeshID()];
@@ -432,8 +440,12 @@ void A3::renderSceneNode(const GeometryNode & node)
 	m_shader.disable();
 }
 
-void A3::renderSceneNode(const JointNode & node)
-{
+void A3::renderSceneNode(const JointNode & node) {
+	renderSceneNode(static_cast<const SceneNode&>(node));
+}
+
+void A3::renderSceneNodePost() {
+	popMatrix();
 }
 
 //----------------------------------------------------------------------------------------
@@ -456,6 +468,23 @@ void A3::renderArcCircle() {
 
 	glBindVertexArray(0);
 	CHECK_GL_ERRORS;
+}
+
+void A3::reset() {
+	m_transformStack.clear();
+	m_transformStack.push_back(glm::mat4());
+}
+
+void A3::pushMatrix() {
+	m_transformStack.push_back(glm::mat4(m_transformStack.back()));
+}
+
+void A3::popMatrix() {
+	m_transformStack.pop_back();
+}
+
+void A3::multMatrix(const glm::mat4& matrix) {
+	m_transformStack.back() = m_transformStack.back() * matrix;
 }
 
 //----------------------------------------------------------------------------------------
@@ -563,16 +592,21 @@ bool A3::keyInputEvent (
 }
 
 A3::RenderSceneNode::RenderSceneNode(A3 & a3)
-	: m_a3(a3)
-{
+	: m_a3(a3) {
 }
 
-void A3::RenderSceneNode::renderSceneNode(const GeometryNode & node)
-{
+void A3::RenderSceneNode::renderSceneNode(const SceneNode & node) {
 	m_a3.renderSceneNode(node);
 }
 
-void A3::RenderSceneNode::renderSceneNode(const JointNode & node)
-{
+void A3::RenderSceneNode::renderSceneNode(const GeometryNode & node) {
 	m_a3.renderSceneNode(node);
+}
+
+void A3::RenderSceneNode::renderSceneNode(const JointNode & node) {
+	m_a3.renderSceneNode(node);
+}
+
+void A3::RenderSceneNode::renderSceneNodePost() {
+	m_a3.renderSceneNodePost();
 }

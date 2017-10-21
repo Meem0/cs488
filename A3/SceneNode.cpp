@@ -2,6 +2,8 @@
 
 #include "cs488-framework/MathUtils.hpp"
 
+#include "A3.hpp"
+
 #include <iostream>
 #include <sstream>
 using namespace std;
@@ -85,14 +87,21 @@ void SceneNode::translate(const glm::vec3& amount) {
 
 void SceneNode::draw(IRenderSceneNode& render) const
 {
-	for (const auto& child : m_children) {
-		child->draw(render);
-	}
+	render.renderSceneNode(*this);
+	SceneNode::drawCommon(render);
 }
 
 std::string SceneNode::getDebugString() const
 {
 	return "SceneNode";
+}
+
+void SceneNode::drawCommon(IRenderSceneNode& render) const
+{
+	for (const auto& child : m_children) {
+		child->draw(render);
+	}
+	render.renderSceneNodePost();
 }
 
 

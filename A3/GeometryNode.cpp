@@ -15,7 +15,7 @@ GeometryNode::GeometryNode(
 void GeometryNode::draw(IRenderSceneNode& render) const
 {
 	render.renderSceneNode(*this);
-	SceneNode::draw(render);
+	SceneNode::drawCommon(render);
 }
 
 Material & GeometryNode::getMaterial()

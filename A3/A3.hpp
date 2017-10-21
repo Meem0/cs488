@@ -25,8 +25,10 @@ class JointNode;
 // plus not wanting to make any new files
 class IRenderSceneNode {
 public:
+	virtual void renderSceneNode(const SceneNode & node) = 0;
 	virtual void renderSceneNode(const GeometryNode& node) = 0;
 	virtual void renderSceneNode(const JointNode& node) = 0;
+	virtual void renderSceneNodePost() = 0;
 };
 
 class A3 : public CS488Window {
@@ -61,8 +63,10 @@ protected:
 	void initPerspectiveMatrix();
 	void uploadCommonSceneUniforms();
 	void renderSceneGraph(const SceneNode &node);
+	void renderSceneNode(const SceneNode& node);
 	void renderSceneNode(const GeometryNode& node);
 	void renderSceneNode(const JointNode& node);
+	void renderSceneNodePost();
 	void renderArcCircle();
 
 	glm::mat4 m_perpsective;
@@ -94,14 +98,25 @@ protected:
 	std::unique_ptr<SceneNode> m_rootNode;
 
 private:
+	void reset();
+
+	void pushMatrix();
+	void popMatrix();
+	void multMatrix(const glm::mat4&);
+
 	class RenderSceneNode : public IRenderSceneNode {
 	public:
 		RenderSceneNode(A3& a3);
 
+		virtual void renderSceneNode(const SceneNode & node) override;
 		virtual void renderSceneNode(const GeometryNode & node) override;
 		virtual void renderSceneNode(const JointNode & node) override;
+		virtual void renderSceneNodePost() override;
+
 	private:
 		A3& m_a3;
 	};
 	RenderSceneNode m_renderSceneNode;
+
+	std::vector<glm::mat4> m_transformStack;
 };
