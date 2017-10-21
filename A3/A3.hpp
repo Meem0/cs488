@@ -112,8 +112,8 @@ private:
 
 	bool drawCircle() const;
 	bool useZBuffer() const;
-	bool backfaceCulling() const;
-	bool frontfaceCuling() const;
+
+	void updateCulling();
 
 	bool jointMode() const;
 

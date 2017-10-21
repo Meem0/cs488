@@ -439,6 +439,7 @@ static void updateShaderUniforms(
  * Called once per frame, after guiLogic().
  */
 void A3::draw() {
+	updateCulling();
 
 	glEnable( GL_DEPTH_TEST );
 	renderSceneGraph(*m_rootNode);
@@ -568,12 +569,22 @@ bool A3::useZBuffer() const {
 	return m_useZBuffer;
 }
 
-bool A3::backfaceCulling() const {
-	return m_backfaceCulling;
-}
-
-bool A3::frontfaceCuling() const {
-	return m_frontfaceCulling;
+void A3::updateCulling() {
+	if (!m_backfaceCulling && !m_frontfaceCulling) {
+		glDisable(GL_CULL_FACE);
+	}
+	else {
+		glEnable(GL_CULL_FACE);
+		if (m_backfaceCulling && m_frontfaceCulling) {
+			glCullFace(GL_FRONT_AND_BACK);
+		}
+		else if (m_backfaceCulling) {
+			glCullFace(GL_BACK);
+		}
+		else if (m_frontfaceCulling) {
+			glCullFace(GL_FRONT);
+		}
+	}
 }
 
 bool A3::jointMode() const {
