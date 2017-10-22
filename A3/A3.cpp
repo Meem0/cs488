@@ -13,11 +13,86 @@ using namespace std;
 #include <glm/gtx/io.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <limits>
+
 using namespace glm;
 
 static bool show_gui = true;
 
 const size_t CIRCLE_PTS = 48;
+
+namespace Trackball {
+
+	vec3 getNormalizedVec(float diameter, vec2 mousePos) {
+		// new position normalized such that 1 is the radius of the trackball
+		vec2 normalizedPos = (2.0f / diameter) * mousePos;
+		float normalizedPosZ = (1.0f - normalizedPos.x * normalizedPos.x - normalizedPos.y * normalizedPos.y);
+
+		/* If the Z component is less than 0, the mouse point
+		* falls outside of the trackball which is interpreted
+		* as rotation about the Z axis.
+		*/
+		if (normalizedPosZ < 0) {
+			float fLength = sqrt(1.0f - normalizedPosZ);
+			normalizedPosZ = 0;
+
+			normalizedPos.x /= fLength;
+			normalizedPos.y /= fLength;
+		}
+		else {
+			normalizedPosZ = sqrt(normalizedPosZ);
+		}
+
+		return vec3(normalizedPos.x, normalizedPos.y, normalizedPosZ);
+	}
+
+	vec3 calculateRotationVector(vec2 mouseNew, vec2 mouseOld, float diameter) {
+		vec3 newVec = getNormalizedVec(diameter, mouseNew);
+		vec3 oldVec = getNormalizedVec(diameter, mouseOld);
+
+		/* Generate rotation vector by calculating cross product:
+		*
+		* fOldVec x fNewVec.
+		*
+		* The rotation vector is the axis of rotation
+		* and is non-unit length since the length of a crossproduct
+		* is related to the angle between fOldVec and fNewVec which we need
+		* in order to perform the rotation.
+		*/
+
+		return glm::cross(oldVec, newVec);
+	}
+
+	mat4 getTrackballRotate(vec2 mouseOld, vec2 mouseNew, vec2 windowSize)
+	{
+		/* vCalcRotVec expects new and old positions in relation to the center of the
+		* trackball circle which is centered in the middle of the window and
+		* half the smaller of nWinWidth or nWinHeight.
+		*/
+		float diameter = (windowSize.x < windowSize.y) ? windowSize.x * 0.5f : windowSize.y * 0.5f;
+		vec2 center(windowSize.x / 2.0f, windowSize.y / 2.0f);
+		vec2 oldMod = mouseOld - center;
+		vec2 newMod = mouseNew - center;
+
+		vec3 rotVec = calculateRotationVector(newMod, oldMod, diameter);
+
+		/* Negate Y component since Y axis increases downwards
+		* in screen space and upwards in OpenGL.
+		*/
+		rotVec.y *= -1.0f;
+
+		float length = glm::length(rotVec);
+		vec3 norm = glm::normalize(rotVec);
+		mat4 newMat = glm::rotate(mat4(), length, norm);
+
+		// Since all these matrices are meant to be loaded
+		// into the OpenGL matrix stack, we need to transpose the
+		// rotation matrix (since OpenGL wants rows stored
+		// in columns)
+		newMat = glm::transpose(newMat);
+		return newMat;
+	}
+}
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -36,6 +111,7 @@ A3::A3(const std::string & luaSceneFile)
 	, m_backfaceCulling(false)
 	, m_frontfaceCulling(false)
 	, m_jointMode(0)
+	, m_mouseButtonPressed{false, false, false}
 {
 }
 
@@ -388,6 +464,20 @@ void A3::guiLogic()
 		ImGui::PopID();
 
 		ImGui::Text("Framerate: %.1f FPS", ImGui::GetIO().Framerate);
+
+		const mat4& rotMat = m_rootRotate;
+		ImGui::Text("Rotation:");
+		ImGui::Text("%.2f %.2f %.2f %.2f", rotMat[0][0], rotMat[1][0], rotMat[2][0], rotMat[3][0]);
+		ImGui::Text("%.2f %.2f %.2f %.2f", rotMat[0][1], rotMat[1][1], rotMat[2][1], rotMat[3][1]);
+		ImGui::Text("%.2f %.2f %.2f %.2f", rotMat[0][2], rotMat[1][2], rotMat[2][2], rotMat[3][2]);
+		ImGui::Text("%.2f %.2f %.2f %.2f", rotMat[0][3], rotMat[1][3], rotMat[2][3], rotMat[3][3]);
+
+		const mat4& transMat = m_rootTranslate;
+		ImGui::Text("Translation:");
+		ImGui::Text("%.2f %.2f %.2f %.2f", transMat[0][0], transMat[1][0], transMat[2][0], transMat[3][0]);
+		ImGui::Text("%.2f %.2f %.2f %.2f", transMat[0][1], transMat[1][1], transMat[2][1], transMat[3][1]);
+		ImGui::Text("%.2f %.2f %.2f %.2f", transMat[0][2], transMat[1][2], transMat[2][2], transMat[3][2]);
+		ImGui::Text("%.2f %.2f %.2f %.2f", transMat[0][3], transMat[1][3], transMat[2][3], transMat[3][3]);
 	}
 	ImGui::End();
 }
@@ -471,7 +561,13 @@ void A3::renderSceneGraph(const SceneNode & root) {
 	// could put a set of mutually recursive functions in this class, which
 	// walk down the tree from nodes of different types.
 
+	pushMatrix();
+	multMatrix(m_rootTranslate);
+	multMatrix(m_rootRotate);
+
 	root.draw(m_renderSceneNode);
+
+	popMatrix();
 
 	glBindVertexArray(0);
 	CHECK_GL_ERRORS;
@@ -591,7 +687,7 @@ void A3::updateCulling() {
 }
 
 bool A3::jointMode() const {
-	return m_jointMode;
+	return m_jointMode != 0;
 }
 
 void A3::pushMatrix() {
@@ -639,7 +735,56 @@ bool A3::mouseMoveEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	vec2 mousePos(
+		static_cast<float>(xPos),
+		static_cast<float>(yPos)
+	);
+	vec2 windowSize(
+		static_cast<float>(m_windowWidth),
+		static_cast<float>(m_windowHeight)
+	);
+
+	vec2 mouseDelta = mousePos - m_mousePos;
+	vec3 translateDelta;
+
+	if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_LEFT]) {
+		float xSensitivity = 1.0f / windowSize.x;
+		float ySensitivity = -1.0f / windowSize.y;
+
+		translateDelta.x = mouseDelta.x * xSensitivity;
+		translateDelta.y = mouseDelta.y * ySensitivity;
+
+		eventHandled = true;
+	}
+	if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_MIDDLE]) {
+		float zSensitivity = 1.0f / windowSize.y;
+
+		translateDelta.z = mouseDelta.y * zSensitivity;
+
+		eventHandled = true;
+	}
+
+	if (translateDelta != vec3()) {
+		m_rootTranslate = glm::translate(m_rootTranslate, translateDelta);
+	}
+
+	if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_RIGHT]) {
+		mat4 rotateDelta = Trackball::getTrackballRotate(
+			m_mousePos,
+			mousePos,
+			windowSize
+		);
+		m_rootRotate = m_rootRotate * rotateDelta;
+
+		if (rotateDelta[0][0] == numeric_limits<float>::infinity() ||
+			rotateDelta[0][0] == -1.0f * numeric_limits<float>::infinity()) {
+			eventHandled = true;
+		}
+
+		eventHandled = true;
+	}
+
+	m_mousePos = mousePos;
 
 	return eventHandled;
 }
@@ -655,7 +800,14 @@ bool A3::mouseButtonInputEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	if (button >= 0 && button < NumMouseButtons) {
+		if (actions == GLFW_PRESS) {
+			m_mouseButtonPressed[button] = true;
+		}
+		else if (actions == GLFW_RELEASE) {
+			m_mouseButtonPressed[button] = false;
+		}
+	}
 
 	return eventHandled;
 }
@@ -685,6 +837,7 @@ bool A3::windowResizeEvent (
 ) {
 	bool eventHandled(false);
 	initPerspectiveMatrix();
+
 	return eventHandled;
 }
 

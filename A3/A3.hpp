@@ -136,6 +136,8 @@ private:
 	RenderSceneNode m_renderSceneNode;
 
 	std::vector<glm::mat4> m_transformStack;
+	glm::mat4 m_rootRotate;
+	glm::mat4 m_rootTranslate;
 
 	std::vector<int> m_commandStack;
 	unsigned int m_commandStackPosition;
@@ -146,4 +148,8 @@ private:
 	bool m_frontfaceCulling;
 
 	int m_jointMode;
+
+	const static int NumMouseButtons = 3;
+	bool m_mouseButtonPressed[NumMouseButtons];
+	glm::vec2 m_mousePos;
 };
