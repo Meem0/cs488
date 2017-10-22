@@ -62,7 +62,7 @@ protected:
 
 	void initPerspectiveMatrix();
 	void uploadCommonSceneUniforms();
-	void renderSceneGraph(const SceneNode &node);
+	void renderSceneGraph(SceneNode &node);
 	void renderSceneNode(const SceneNode& node);
 	void renderSceneNode(const GeometryNode& node);
 	void renderSceneNode(const JointNode& node);

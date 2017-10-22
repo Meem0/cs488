@@ -543,31 +543,23 @@ void A3::draw() {
 }
 
 //----------------------------------------------------------------------------------------
-void A3::renderSceneGraph(const SceneNode & root) {
+void A3::renderSceneGraph(SceneNode & root) {
 
 	// Bind the VAO once here, and reuse for all GeometryNode rendering below.
 	glBindVertexArray(m_vao_meshData);
 
-	// This is emphatically *not* how you should be drawing the scene graph in
-	// your final implementation.  This is a non-hierarchical demonstration
-	// in which we assume that there is a list of GeometryNodes living directly
-	// underneath the root node, and that we can draw them in a loop.  It's
-	// just enough to demonstrate how to get geometry and materials out of
-	// a GeometryNode and onto the screen.
+	// we want to translate before applying the root node's local transform
+	// (so that it translates independent of the node's rotation)
+	// and rotate after applying the root node's local transform
+	// (so that it translates around its local origin, not the world's)
 
-	// You'll want to turn this into recursive code that walks over the tree.
-	// You can do that by putting a method in SceneNode, overridden in its
-	// subclasses, that renders the subtree rooted at every node.  Or you
-	// could put a set of mutually recursive functions in this class, which
-	// walk down the tree from nodes of different types.
-
-	pushMatrix();
-	multMatrix(m_rootTranslate);
-	multMatrix(m_rootRotate);
+	mat4 oldMat = root.getTransform();
+	mat4 newMat = m_rootTranslate * oldMat * m_rootRotate;
+	root.setTransform(newMat);
 
 	root.draw(m_renderSceneNode);
 
-	popMatrix();
+	root.setTransform(oldMat);
 
 	glBindVertexArray(0);
 	CHECK_GL_ERRORS;
