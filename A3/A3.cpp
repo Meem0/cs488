@@ -478,6 +478,19 @@ void A3::guiLogic()
 		ImGui::Text("%.2f %.2f %.2f %.2f", transMat[0][1], transMat[1][1], transMat[2][1], transMat[3][1]);
 		ImGui::Text("%.2f %.2f %.2f %.2f", transMat[0][2], transMat[1][2], transMat[2][2], transMat[3][2]);
 		ImGui::Text("%.2f %.2f %.2f %.2f", transMat[0][3], transMat[1][3], transMat[2][3], transMat[3][3]);
+
+
+		float pixelRGB[3];
+		glReadPixels(
+			static_cast<int>(m_mousePos.x),
+			m_framebufferHeight - static_cast<int>(m_mousePos.y),
+			1, 1,
+			GL_RGB,
+			GL_FLOAT,
+			pixelRGB
+		);
+		ImGui::Text("Mouse pos: (%.1f, %.1f)", m_mousePos.x, m_mousePos.y);
+		ImGui::Text("Colour under cursor: (%.1f, %.1f, %.1f)", pixelRGB[0], pixelRGB[1], pixelRGB[2]);
 	}
 	ImGui::End();
 }
