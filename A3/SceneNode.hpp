@@ -9,6 +9,11 @@
 #include <string>
 #include <iostream>
 
+namespace NodeUtils {
+	unsigned int colourToId(glm::vec3 colour);
+	glm::vec3 idToColour(unsigned int id);
+}
+
 class IRenderSceneNode;
 
 class SceneNode {
@@ -32,6 +37,8 @@ public:
     void translate(const glm::vec3& amount);
 
 	virtual void draw(IRenderSceneNode& render) const;
+
+	bool toggleSelected(unsigned int id);
 
 	friend std::ostream & operator << (std::ostream & os, const SceneNode & node);
 

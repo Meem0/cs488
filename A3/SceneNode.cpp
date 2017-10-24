@@ -13,6 +13,16 @@ using namespace std;
 
 using namespace glm;
 
+namespace NodeUtils {
+	unsigned int colourToId(vec3 colour) {
+		return 0;
+	}
+
+	vec3 idToColour(unsigned int id) {
+		return vec3();
+	}
+}
+
 
 // Static class variable
 unsigned int SceneNode::s_nodeInstanceCount = 0;
@@ -89,6 +99,22 @@ void SceneNode::draw(IRenderSceneNode& render) const
 {
 	render.renderSceneNode(*this);
 	SceneNode::drawCommon(render);
+}
+
+bool SceneNode::toggleSelected(unsigned int id)
+{
+	if (m_nodeId == id) {
+		m_isSelected = !m_isSelected;
+		return true;
+	}
+
+	for (const auto& child : m_children) {
+		if (child->toggleSelected(id)) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 std::string SceneNode::getDebugString() const
