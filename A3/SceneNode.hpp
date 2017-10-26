@@ -40,6 +40,7 @@ public:
 	virtual void draw(IRenderSceneNode& render) const;
 
 	bool toggleSelected(unsigned int id);
+	bool isSelected() const;
 
 	friend std::ostream & operator << (std::ostream & os, const SceneNode & node);
 

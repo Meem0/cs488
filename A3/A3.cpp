@@ -113,7 +113,6 @@ A3::A3(const std::string & luaSceneFile)
 	, m_jointMode(0)
 	, m_mouseButtonPressed{false, false, false}
 	, m_pickingMode(false)
-	, m_pickedId(0)
 {
 }
 
@@ -487,8 +486,6 @@ void A3::guiLogic()
 		colourUnderCursor(cursorColour);
 		ImGui::Text("Mouse pos: (%.1f, %.1f)", m_mousePos.x, m_mousePos.y);
 		ImGui::Text("Colour under cursor: (%d, %d, %d)", cursorColour[0], cursorColour[1], cursorColour[2]);
-		ImGui::Text("Picked ID: %d", m_pickedId);
-		ImGui::Text("Picked colour: (%d, %d, %d)", m_pickedColour[0], m_pickedColour[1], m_pickedColour[2]);
 	}
 	ImGui::End();
 }
@@ -532,7 +529,14 @@ static void updateShaderUniforms(
 			//-- Set Material values:
 			location = shader.getUniformLocation("material.kd");
 			vec3 kd = node.getMaterial().kd;
-			glUniform3fv(location, 1, value_ptr(kd));
+
+			if (node.isSelected()) {
+				glUniform3f(location, 0.5f, 0.5f, 0);
+			}
+			else {
+				glUniform3fv(location, 1, value_ptr(kd));
+			}
+
 			CHECK_GL_ERRORS;
 			location = shader.getUniformLocation("material.ks");
 			vec3 ks = node.getMaterial().ks;
@@ -828,7 +832,9 @@ bool A3::mouseMoveEvent (
 				m_rootRotate = m_rootRotate * rotateDelta;
 
 				if (rotateDelta[0][0] == numeric_limits<float>::infinity() ||
-					rotateDelta[0][0] == -1.0f * numeric_limits<float>::infinity()) {
+					rotateDelta[0][0] == -1.0f * numeric_limits<float>::infinity() ||
+					isnan(rotateDelta[0][0])) {
+					throw 0;
 					eventHandled = true;
 				}
 
@@ -866,15 +872,11 @@ bool A3::mouseButtonInputEvent (
 				colourUnderCursor(colour);
 
 				// Reassemble the object ID.
-				m_pickedId = colour[0] + (colour[1] << 8) + (colour[2] << 16);
+				unsigned int pickedId = colour[0] + (colour[1] << 8) + (colour[2] << 16);
 
-				m_pickedColour[0] = colour[0];
-				m_pickedColour[1] = colour[1];
-				m_pickedColour[2] = colour[2];
+				m_rootNode->toggleSelected(pickedId);
 
 				m_pickingMode = false;
-
-				CHECK_GL_ERRORS;
 			}
 
 			eventHandled = true;

@@ -122,6 +122,11 @@ bool SceneNode::toggleSelected(unsigned int id)
 	return false;
 }
 
+bool SceneNode::isSelected() const
+{
+	return m_isSelected;
+}
+
 std::string SceneNode::getDebugString() const
 {
 	return "SceneNode";

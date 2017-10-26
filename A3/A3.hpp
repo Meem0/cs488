@@ -157,6 +157,5 @@ private:
 	glm::vec2 m_mousePos;
 
 	bool m_pickingMode;
-	unsigned int m_pickedId;
 	GLubyte m_pickedColour[3];
 };
