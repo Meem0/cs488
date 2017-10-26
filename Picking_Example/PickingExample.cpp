@@ -275,6 +275,11 @@ void PickingExample::guiLogic()
 
 		ImGui::Text( "Framerate: %.1f FPS", ImGui::GetIO().Framerate );
 
+		GLubyte cursorColour[4];
+		getColourUnderCursor(cursorColour);
+		ImGui::Text("Colour under cursor: (%d, %d, %d)", cursorColour[0], cursorColour[1], cursorColour[2]);
+		ImGui::Text("Picked ID: %d", picked_id);
+
 	ImGui::End();
 }
 
@@ -313,6 +318,27 @@ void PickingExample::updateShaderUniforms(
 	}
 
 	m_shader.disable();
+}
+
+void PickingExample::getColourUnderCursor(GLubyte buffer[4]) const
+{
+	double xpos, ypos;
+	glfwGetCursorPos(m_window, &xpos, &ypos);
+
+	// Ugly -- FB coordinates might be different than Window coordinates
+	// (e.g., on a retina display).  Must compensate.
+	xpos *= double(m_framebufferWidth) / double(m_windowWidth);
+	// WTF, don't know why I have to measure y relative to the bottom of
+	// the window in this case.
+	ypos = m_windowHeight - ypos;
+	ypos *= double(m_framebufferHeight) / double(m_windowHeight);
+
+	// A bit ugly -- don't want to swap the just-drawn false colours
+	// to the screen, so read from the back buffer.
+	glReadBuffer(GL_BACK);
+	// Actually read the pixel at the mouse location.
+	glReadPixels(int(xpos), int(ypos), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	CHECK_GL_ERRORS;
 }
 
 //----------------------------------------------------------------------------------------
@@ -392,9 +418,6 @@ bool PickingExample::mouseButtonInputEvent (
 	bool eventHandled(false);
 
 	if (button == GLFW_MOUSE_BUTTON_LEFT && actions == GLFW_PRESS) {
-		double xpos, ypos;
-		glfwGetCursorPos( m_window, &xpos, &ypos );
-
 		do_picking = true;
 
 		uploadCommonSceneUniforms();
@@ -410,24 +433,12 @@ bool PickingExample::mouseButtonInputEvent (
 
 		CHECK_GL_ERRORS;
 
-		// Ugly -- FB coordinates might be different than Window coordinates
-		// (e.g., on a retina display).  Must compensate.
-		xpos *= double(m_framebufferWidth) / double(m_windowWidth);
-		// WTF, don't know why I have to measure y relative to the bottom of
-		// the window in this case.
-		ypos = m_windowHeight - ypos;
-		ypos *= double(m_framebufferHeight) / double(m_windowHeight);
-
-		GLubyte buffer[ 4 ] = { 0, 0, 0, 0 };
-		// A bit ugly -- don't want to swap the just-drawn false colours
-		// to the screen, so read from the back buffer.
-		glReadBuffer( GL_BACK );
-		// Actually read the pixel at the mouse location.
-		glReadPixels( int(xpos), int(ypos), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, buffer );
-		CHECK_GL_ERRORS;
+		GLubyte buffer[4] = { 0, 0, 0, 0 };
+		getColourUnderCursor(buffer);
 
 		// Reassemble the object ID.
 		unsigned int what = buffer[0] + (buffer[1] << 8) + (buffer[2] << 16);
+		picked_id = what;
 
 		if( what < xforms.size() ) {
 			selected[what] = !selected[what];
@@ -484,6 +495,9 @@ bool PickingExample::keyInputEvent (
 		if( key == GLFW_KEY_M ) {
 			show_gui = !show_gui;
 			eventHandled = true;
+		}
+		if (key == GLFW_KEY_K) {
+			do_picking = !do_picking;
 		}
 	}
 	// Fill in with event handling code...

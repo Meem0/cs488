@@ -46,6 +46,8 @@ protected:
 	void uploadCommonSceneUniforms();
 	void updateShaderUniforms( const glm::mat4& MV, unsigned int idx, const glm::vec3& col );
 
+	void getColourUnderCursor(GLubyte[4]) const;
+
 	glm::mat4 m_perpsective;
 	glm::mat4 m_view;
 
@@ -60,6 +62,7 @@ protected:
 	ShaderProgram m_shader;
 
 	bool do_picking;
+	unsigned int picked_id;
 
 	// BatchInfoMap is an associative container that maps a unique MeshId to a BatchInfo
 	// object. Each BatchInfo object contains an index offset and the number of indices
