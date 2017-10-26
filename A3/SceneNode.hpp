@@ -15,12 +15,15 @@ namespace NodeUtils {
 }
 
 class IRenderSceneNode;
+class JointNode;
 
 class SceneNode {
 public:
     SceneNode(const std::string & name);
 
     virtual ~SceneNode();
+
+	virtual void initializeTree();
     
 	int totalSceneNodes() const;
     
@@ -39,7 +42,12 @@ public:
 
 	virtual void draw(IRenderSceneNode& render) const;
 
-	bool toggleSelected(unsigned int id);
+	SceneNode* getNode(unsigned int id);
+
+	virtual JointNode* getParentJoint();
+	virtual void setParentJoint(JointNode*);
+
+	void setSelected(bool);
 	bool isSelected() const;
 
 	friend std::ostream & operator << (std::ostream & os, const SceneNode & node);
@@ -48,6 +56,8 @@ protected:
 	virtual std::string getDebugString() const;
 
 	void drawCommon(IRenderSceneNode& render) const;
+
+	std::vector<std::unique_ptr<SceneNode>> m_children;
 
 private:
 	SceneNode(const SceneNode & other) = delete;
@@ -60,8 +70,6 @@ private:
 	// Transformations
 	glm::mat4 m_trans;
 	glm::mat4 m_invtrans;
-
-	std::vector<std::unique_ptr<SceneNode>> m_children;
 
 	std::string m_name;
 	unsigned int m_nodeId;

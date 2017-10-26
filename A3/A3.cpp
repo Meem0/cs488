@@ -139,6 +139,7 @@ void A3::init()
 	enableVertexShaderInputSlots();
 
 	processLuaSceneFile(m_luaSceneFile);
+	m_rootNode->initializeTree();
 
 	// Load and decode all .obj files at once here.  You may add additional .obj files to
 	// this list in order to support rendering additional mesh types.  All vertex
@@ -874,7 +875,10 @@ bool A3::mouseButtonInputEvent (
 				// Reassemble the object ID.
 				unsigned int pickedId = colour[0] + (colour[1] << 8) + (colour[2] << 16);
 
-				m_rootNode->toggleSelected(pickedId);
+				SceneNode* pickedNode = m_rootNode->getNode(pickedId);
+				if (pickedNode != nullptr && pickedNode->getParentJoint() != nullptr) {
+					pickedNode->setSelected(!pickedNode->isSelected());
+				}
 
 				m_pickingMode = false;
 			}

@@ -7,6 +7,8 @@ public:
 	JointNode(const std::string & name);
 	virtual ~JointNode();
 
+	virtual void initializeTree() override;
+
 	virtual void draw(IRenderSceneNode& render) const override;
 
 	void setJointX(double min, double init, double max);

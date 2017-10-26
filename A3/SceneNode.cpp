@@ -42,6 +42,13 @@ SceneNode::SceneNode(const std::string& name)
 SceneNode::~SceneNode() {
 }
 
+void SceneNode::initializeTree()
+{
+	for (auto& child : m_children) {
+		child->initializeTree();
+	}
+}
+
 //---------------------------------------------------------------------------------------
 void SceneNode::setTransform(const glm::mat4& m) {
 	m_trans = m;
@@ -106,20 +113,30 @@ void SceneNode::draw(IRenderSceneNode& render) const
 	SceneNode::drawCommon(render);
 }
 
-bool SceneNode::toggleSelected(unsigned int id)
+SceneNode* SceneNode::getNode(unsigned int id)
 {
 	if (m_nodeId == id) {
-		m_isSelected = !m_isSelected;
-		return true;
+		return this;
 	}
 
 	for (const auto& child : m_children) {
-		if (child->toggleSelected(id)) {
-			return true;
+		SceneNode* node = child->getNode(id);
+		if (node != nullptr) {
+			return node;
 		}
 	}
 
-	return false;
+	return nullptr;
+}
+
+JointNode* SceneNode::getParentJoint()
+{
+	return nullptr;
+}
+
+void SceneNode::setSelected(bool selected)
+{
+	m_isSelected = selected;
 }
 
 bool SceneNode::isSelected() const
@@ -138,6 +155,10 @@ void SceneNode::drawCommon(IRenderSceneNode& render) const
 		child->draw(render);
 	}
 	render.renderSceneNodePost();
+}
+
+void SceneNode::setParentJoint(JointNode*)
+{
 }
 
 

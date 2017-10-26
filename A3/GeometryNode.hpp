@@ -15,6 +15,9 @@ public:
 	const Material& getMaterial() const;
 	const std::string& getMeshID() const;
 
+	virtual JointNode* getParentJoint() override;
+	virtual void setParentJoint(JointNode*) override;
+
 protected:
 	virtual std::string getDebugString() const;
 
@@ -24,4 +27,6 @@ private:
 	// Mesh Identifier. This must correspond to an object name of
 	// a loaded .obj file.
 	std::string m_meshId;
+
+	JointNode* m_parentJoint;
 };

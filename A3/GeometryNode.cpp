@@ -4,11 +4,12 @@
 
 //---------------------------------------------------------------------------------------
 GeometryNode::GeometryNode(
-		const std::string & meshId,
-		const std::string & name
+	const std::string & meshId,
+	const std::string & name
 )
-	: SceneNode(name),
-	  m_meshId(meshId)
+	: SceneNode(name)
+	, m_meshId(meshId)
+	, m_parentJoint(nullptr)
 {
 }
 
@@ -31,6 +32,16 @@ const Material & GeometryNode::getMaterial() const
 const std::string & GeometryNode::getMeshID() const
 {
 	return m_meshId;
+}
+
+JointNode* GeometryNode::getParentJoint()
+{
+	return m_parentJoint;
+}
+
+void GeometryNode::setParentJoint(JointNode* joint)
+{
+	m_parentJoint = joint;
 }
 
 std::string GeometryNode::getDebugString() const

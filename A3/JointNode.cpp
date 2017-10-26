@@ -12,6 +12,16 @@ JointNode::JointNode(const std::string& name)
 JointNode::~JointNode() {
 
 }
+
+void JointNode::initializeTree()
+{
+	for (auto& child : m_children) {
+		child->setParentJoint(this);
+	}
+
+	SceneNode::initializeTree();
+}
+
  //---------------------------------------------------------------------------------------
 void JointNode::setJointX(double min, double init, double max) {
 	m_jointX.min = min;
