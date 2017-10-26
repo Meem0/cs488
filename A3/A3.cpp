@@ -675,9 +675,11 @@ void A3::renderArcCircle() {
 }
 
 void A3::resetPosition() {
+	m_rootTranslate = mat4();
 }
 
 void A3::resetOrientation() {
+	m_rootRotate = mat4();
 }
 
 void A3::resetJoints() {
