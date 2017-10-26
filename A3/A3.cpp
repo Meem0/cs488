@@ -114,6 +114,7 @@ A3::A3(const std::string & luaSceneFile)
 	, m_mouseButtonPressed{false, false, false}
 	, m_pickingMode(false)
 	, m_pickedId(0)
+	, m_pickingFrames(0)
 {
 }
 
@@ -360,14 +361,13 @@ void A3::uploadCommonSceneUniforms() {
 		location = m_shader.getUniformLocation("picking");
 		glUniform1i(location, m_pickingMode ? 1 : 0);
 
-		if (!m_pickingMode && false) {
+		if (!m_pickingMode) {
 			//-- Set LightSource uniform for the scene:
 			{
 				location = m_shader.getUniformLocation("light.position");
 				glUniform3fv(location, 1, value_ptr(m_light.position));
 				location = m_shader.getUniformLocation("light.rgbIntensity");
 				glUniform3fv(location, 1, value_ptr(m_light.rgbIntensity));
-				//glUniform3fv(location, 1, value_ptr(noLight));
 				CHECK_GL_ERRORS;
 			}
 
@@ -376,7 +376,6 @@ void A3::uploadCommonSceneUniforms() {
 				location = m_shader.getUniformLocation("ambientIntensity");
 				vec3 ambientIntensity(0.05f);
 				glUniform3fv(location, 1, value_ptr(ambientIntensity));
-				//glUniform3fv(location, 1, value_ptr(noLight));
 				CHECK_GL_ERRORS;
 			}
 		}
