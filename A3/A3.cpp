@@ -112,6 +112,9 @@ A3::A3(const std::string & luaSceneFile)
 	, m_frontfaceCulling(false)
 	, m_jointMode(0)
 	, m_mouseButtonPressed{false, false, false}
+	, m_pickingMode(false)
+	, m_pickedId(0)
+	, m_pickingFrames(0)
 {
 }
 
@@ -355,22 +358,26 @@ void A3::uploadCommonSceneUniforms() {
 		glUniformMatrix4fv(location, 1, GL_FALSE, value_ptr(m_perpsective));
 		CHECK_GL_ERRORS;
 
+		location = m_shader.getUniformLocation("picking");
+		glUniform1i(location, m_pickingMode ? 1 : 0);
 
-		//-- Set LightSource uniform for the scene:
-		{
-			location = m_shader.getUniformLocation("light.position");
-			glUniform3fv(location, 1, value_ptr(m_light.position));
-			location = m_shader.getUniformLocation("light.rgbIntensity");
-			glUniform3fv(location, 1, value_ptr(m_light.rgbIntensity));
-			CHECK_GL_ERRORS;
-		}
+		if (!m_pickingMode) {
+			//-- Set LightSource uniform for the scene:
+			{
+				location = m_shader.getUniformLocation("light.position");
+				glUniform3fv(location, 1, value_ptr(m_light.position));
+				location = m_shader.getUniformLocation("light.rgbIntensity");
+				glUniform3fv(location, 1, value_ptr(m_light.rgbIntensity));
+				CHECK_GL_ERRORS;
+			}
 
-		//-- Set background light ambient intensity
-		{
-			location = m_shader.getUniformLocation("ambientIntensity");
-			vec3 ambientIntensity(0.05f);
-			glUniform3fv(location, 1, value_ptr(ambientIntensity));
-			CHECK_GL_ERRORS;
+			//-- Set background light ambient intensity
+			{
+				location = m_shader.getUniformLocation("ambientIntensity");
+				vec3 ambientIntensity(0.05f);
+				glUniform3fv(location, 1, value_ptr(ambientIntensity));
+				CHECK_GL_ERRORS;
+			}
 		}
 	}
 	m_shader.disable();
@@ -382,7 +389,25 @@ void A3::uploadCommonSceneUniforms() {
  */
 void A3::appLogic()
 {
-	// Place per frame, application logic here ...
+	if (m_pickingFrames > 0) {
+		--m_pickingFrames;
+
+		if (m_pickingFrames == 0) {
+			GLubyte colour[4];
+			colourUnderCursor(colour);
+
+			// Reassemble the object ID.
+			m_pickedId = colour[0] + (colour[1] << 8) + (colour[2] << 16);
+
+			m_pickedColour[0] = colour[0];
+			m_pickedColour[1] = colour[1];
+			m_pickedColour[2] = colour[2];
+
+			m_pickingMode = false;
+
+			CHECK_GL_ERRORS;
+		}
+	}
 
 	uploadCommonSceneUniforms();
 }
@@ -479,18 +504,12 @@ void A3::guiLogic()
 		ImGui::Text("%.2f %.2f %.2f %.2f", transMat[0][2], transMat[1][2], transMat[2][2], transMat[3][2]);
 		ImGui::Text("%.2f %.2f %.2f %.2f", transMat[0][3], transMat[1][3], transMat[2][3], transMat[3][3]);
 
-
-		float pixelRGB[3];
-		glReadPixels(
-			static_cast<int>(m_mousePos.x),
-			m_framebufferHeight - static_cast<int>(m_mousePos.y),
-			1, 1,
-			GL_RGB,
-			GL_FLOAT,
-			pixelRGB
-		);
+		GLubyte cursorColour[4];
+		colourUnderCursor(cursorColour);
 		ImGui::Text("Mouse pos: (%.1f, %.1f)", m_mousePos.x, m_mousePos.y);
-		ImGui::Text("Colour under cursor: (%.1f, %.1f, %.1f)", pixelRGB[0], pixelRGB[1], pixelRGB[2]);
+		ImGui::Text("Colour under cursor: (%d, %d, %d)", cursorColour[0], cursorColour[1], cursorColour[2]);
+		ImGui::Text("Picked ID: %d", m_pickedId);
+		ImGui::Text("Picked colour: (%d, %d, %d)", m_pickedColour[0], m_pickedColour[1], m_pickedColour[2]);
 	}
 	ImGui::End();
 }
@@ -501,7 +520,8 @@ static void updateShaderUniforms(
 		const ShaderProgram & shader,
 		const GeometryNode & node,
 		const glm::mat4 & viewMatrix,
-		const glm::mat4 & modelMatrix
+		const glm::mat4 & modelMatrix,
+		bool pickingMode
 ) {
 
 	shader.enable();
@@ -512,29 +532,70 @@ static void updateShaderUniforms(
 		glUniformMatrix4fv(location, 1, GL_FALSE, value_ptr(modelView));
 		CHECK_GL_ERRORS;
 
-		//-- Set NormMatrix:
-		location = shader.getUniformLocation("NormalMatrix");
-		mat3 normalMatrix = glm::transpose(glm::inverse(mat3(modelView)));
-		glUniformMatrix3fv(location, 1, GL_FALSE, value_ptr(normalMatrix));
-		CHECK_GL_ERRORS;
+		if (pickingMode) {
+			unsigned int idx = node.getNodeId();
 
+			float r = float(idx & 0xff) / 255.0f;
+			float g = float((idx >> 8) & 0xff) / 255.0f;
+			float b = float((idx >> 16) & 0xff) / 255.0f;
 
-		//-- Set Material values:
-		location = shader.getUniformLocation("material.kd");
-		vec3 kd = node.getMaterial().kd;
-		glUniform3fv(location, 1, value_ptr(kd));
-		CHECK_GL_ERRORS;
-		location = shader.getUniformLocation("material.ks");
-		vec3 ks = node.getMaterial().ks;
-		glUniform3fv(location, 1, value_ptr(ks));
-		CHECK_GL_ERRORS;
-		location = shader.getUniformLocation("material.shininess");
-		glUniform1f(location, node.getMaterial().shininess);
-		CHECK_GL_ERRORS;
+			location = shader.getUniformLocation("material.kd");
+			glUniform3f(location, r, g, b);
+			CHECK_GL_ERRORS;
+		}
+		else {
+			//-- Set NormMatrix:
+			location = shader.getUniformLocation("NormalMatrix");
+			mat3 normalMatrix = glm::transpose(glm::inverse(mat3(modelView)));
+			glUniformMatrix3fv(location, 1, GL_FALSE, value_ptr(normalMatrix));
+			CHECK_GL_ERRORS;
 
+			//-- Set Material values:
+			location = shader.getUniformLocation("material.kd");
+			vec3 kd = node.getMaterial().kd;
+			glUniform3fv(location, 1, value_ptr(kd));
+			CHECK_GL_ERRORS;
+			location = shader.getUniformLocation("material.ks");
+			vec3 ks = node.getMaterial().ks;
+			glUniform3fv(location, 1, value_ptr(ks));
+			CHECK_GL_ERRORS;
+			location = shader.getUniformLocation("material.shininess");
+			glUniform1f(location, node.getMaterial().shininess);
+			CHECK_GL_ERRORS;
+		}
 	}
 	shader.disable();
 
+}
+
+void A3::drawPickingMode() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glEnable(GL_DEPTH_TEST);
+	renderSceneGraph(*m_rootNode);
+	glDisable(GL_DEPTH_TEST);
+}
+
+void A3::colourUnderCursor(GLubyte colour[4]) const
+{
+	double xpos, ypos;
+	glfwGetCursorPos(m_window, &xpos, &ypos);
+
+	// Ugly -- FB coordinates might be different than Window coordinates
+	// (e.g., on a retina display).  Must compensate.
+	xpos *= double(m_framebufferWidth) / double(m_windowWidth);
+	// WTF, don't know why I have to measure y relative to the bottom of
+	// the window in this case.
+	ypos = m_windowHeight - ypos;
+	ypos *= double(m_framebufferHeight) / double(m_windowHeight);
+
+	// A bit ugly -- don't want to swap the just-drawn false colours
+	// to the screen, so read from the back buffer.
+	//glReadBuffer(GL_BACK);
+
+	// Actually read the pixel at the mouse location.
+	glReadPixels(int(xpos), int(ypos), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, colour);
+	CHECK_GL_ERRORS;
 }
 
 //----------------------------------------------------------------------------------------
@@ -542,6 +603,11 @@ static void updateShaderUniforms(
  * Called once per frame, after guiLogic().
  */
 void A3::draw() {
+	if (m_pickingMode) {
+		drawPickingMode();
+		return;
+	}
+
 	updateCulling();
 
 	if (useZBuffer()) {
@@ -586,7 +652,7 @@ void A3::renderSceneNode(const SceneNode & node) {
 void A3::renderSceneNode(const GeometryNode & node) {
 	renderSceneNode(static_cast<const SceneNode&>(node));
 
-	updateShaderUniforms(m_shader, node, m_view, m_transformStack.back());
+	updateShaderUniforms(m_shader, node, m_view, m_transformStack.back(), m_pickingMode);
 
 	// Get the BatchInfo corresponding to the GeometryNode's unique MeshId.
 	BatchInfo batchInfo = m_batchInfoMap[node.getMeshID()];
@@ -744,49 +810,55 @@ bool A3::mouseMoveEvent (
 		static_cast<float>(xPos),
 		static_cast<float>(yPos)
 	);
-	vec2 windowSize(
-		static_cast<float>(m_windowWidth),
-		static_cast<float>(m_windowHeight)
-	);
 
-	vec2 mouseDelta = mousePos - m_mousePos;
-	vec3 translateDelta;
-
-	if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_LEFT]) {
-		float xSensitivity = 1.0f / windowSize.x;
-		float ySensitivity = -1.0f / windowSize.y;
-
-		translateDelta.x = mouseDelta.x * xSensitivity;
-		translateDelta.y = mouseDelta.y * ySensitivity;
-
-		eventHandled = true;
-	}
-	if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_MIDDLE]) {
-		float zSensitivity = 1.0f / windowSize.y;
-
-		translateDelta.z = mouseDelta.y * zSensitivity;
-
-		eventHandled = true;
-	}
-
-	if (translateDelta != vec3()) {
-		m_rootTranslate = glm::translate(m_rootTranslate, translateDelta);
-	}
-
-	if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_RIGHT]) {
-		mat4 rotateDelta = Trackball::getTrackballRotate(
-			m_mousePos,
-			mousePos,
-			windowSize
+	if (!ImGui::IsMouseHoveringAnyWindow()) {
+		vec2 windowSize(
+			static_cast<float>(m_windowWidth),
+			static_cast<float>(m_windowHeight)
 		);
-		m_rootRotate = m_rootRotate * rotateDelta;
 
-		if (rotateDelta[0][0] == numeric_limits<float>::infinity() ||
-			rotateDelta[0][0] == -1.0f * numeric_limits<float>::infinity()) {
-			eventHandled = true;
+		vec2 mouseDelta = mousePos - m_mousePos;
+
+		if (!jointMode()) {
+			vec3 translateDelta;
+
+			if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_LEFT]) {
+				float xSensitivity = 1.0f / windowSize.x;
+				float ySensitivity = -1.0f / windowSize.y;
+
+				translateDelta.x = mouseDelta.x * xSensitivity;
+				translateDelta.y = mouseDelta.y * ySensitivity;
+
+				eventHandled = true;
+			}
+			if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_MIDDLE]) {
+				float zSensitivity = 1.0f / windowSize.y;
+
+				translateDelta.z = mouseDelta.y * zSensitivity;
+
+				eventHandled = true;
+			}
+
+			if (translateDelta != vec3()) {
+				m_rootTranslate = glm::translate(m_rootTranslate, translateDelta);
+			}
+
+			if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_RIGHT]) {
+				mat4 rotateDelta = Trackball::getTrackballRotate(
+					m_mousePos,
+					mousePos,
+					windowSize
+				);
+				m_rootRotate = m_rootRotate * rotateDelta;
+
+				if (rotateDelta[0][0] == numeric_limits<float>::infinity() ||
+					rotateDelta[0][0] == -1.0f * numeric_limits<float>::infinity()) {
+					eventHandled = true;
+				}
+
+				eventHandled = true;
+			}
 		}
-
-		eventHandled = true;
 	}
 
 	m_mousePos = mousePos;
@@ -808,9 +880,17 @@ bool A3::mouseButtonInputEvent (
 	if (button >= 0 && button < NumMouseButtons) {
 		if (actions == GLFW_PRESS) {
 			m_mouseButtonPressed[button] = true;
+
+			if (button == GLFW_MOUSE_BUTTON_LEFT && jointMode()) {
+				m_pickingMode = true;
+				m_pickingFrames = 3;
+			}
+
+			eventHandled = true;
 		}
 		else if (actions == GLFW_RELEASE) {
 			m_mouseButtonPressed[button] = false;
+			eventHandled = true;
 		}
 	}
 

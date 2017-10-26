@@ -121,6 +121,9 @@ private:
 	void popMatrix();
 	void multMatrix(const glm::mat4&);
 
+	void drawPickingMode();
+	void colourUnderCursor(GLubyte[4]) const;
+
 	class RenderSceneNode : public IRenderSceneNode {
 	public:
 		RenderSceneNode(A3& a3);
@@ -152,4 +155,10 @@ private:
 	const static int NumMouseButtons = 3;
 	bool m_mouseButtonPressed[NumMouseButtons];
 	glm::vec2 m_mousePos;
+
+	bool m_pickingMode;
+	unsigned int m_pickedId;
+	GLubyte m_pickedColour[3];
+
+	unsigned int m_pickingFrames;
 };
