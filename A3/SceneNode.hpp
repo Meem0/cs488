@@ -26,6 +26,7 @@ public:
     
     const glm::mat4& getTransform() const;
     const glm::mat4& getInverse() const;
+	unsigned int getNodeId() const;
     
     void setTransform(const glm::mat4& m);
     

@@ -58,6 +58,11 @@ const glm::mat4& SceneNode::getInverse() const {
 	return m_invtrans;
 }
 
+unsigned int SceneNode::getNodeId() const
+{
+	return m_nodeId;
+}
+
 //---------------------------------------------------------------------------------------
 void SceneNode::add_child(SceneNode* child) {
 	unique_ptr<SceneNode> ptr(child);
