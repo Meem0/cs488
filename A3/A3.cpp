@@ -114,7 +114,6 @@ A3::A3(const std::string & luaSceneFile)
 	, m_mouseButtonPressed{false, false, false}
 	, m_pickingMode(false)
 	, m_pickedId(0)
-	, m_pickingFrames(0)
 {
 }
 
@@ -389,26 +388,6 @@ void A3::uploadCommonSceneUniforms() {
  */
 void A3::appLogic()
 {
-	if (m_pickingFrames > 0) {
-		--m_pickingFrames;
-
-		if (m_pickingFrames == 0) {
-			GLubyte colour[4];
-			colourUnderCursor(colour);
-
-			// Reassemble the object ID.
-			m_pickedId = colour[0] + (colour[1] << 8) + (colour[2] << 16);
-
-			m_pickedColour[0] = colour[0];
-			m_pickedColour[1] = colour[1];
-			m_pickedColour[2] = colour[2];
-
-			m_pickingMode = false;
-
-			CHECK_GL_ERRORS;
-		}
-	}
-
 	uploadCommonSceneUniforms();
 }
 
@@ -569,6 +548,8 @@ static void updateShaderUniforms(
 }
 
 void A3::drawPickingMode() {
+	uploadCommonSceneUniforms();
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_DEPTH_TEST);
@@ -591,7 +572,7 @@ void A3::colourUnderCursor(GLubyte colour[4]) const
 
 	// A bit ugly -- don't want to swap the just-drawn false colours
 	// to the screen, so read from the back buffer.
-	//glReadBuffer(GL_BACK);
+	glReadBuffer(GL_BACK);
 
 	// Actually read the pixel at the mouse location.
 	glReadPixels(int(xpos), int(ypos), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, colour);
@@ -603,11 +584,6 @@ void A3::colourUnderCursor(GLubyte colour[4]) const
  * Called once per frame, after guiLogic().
  */
 void A3::draw() {
-	if (m_pickingMode) {
-		drawPickingMode();
-		return;
-	}
-
 	updateCulling();
 
 	if (useZBuffer()) {
@@ -883,7 +859,22 @@ bool A3::mouseButtonInputEvent (
 
 			if (button == GLFW_MOUSE_BUTTON_LEFT && jointMode()) {
 				m_pickingMode = true;
-				m_pickingFrames = 3;
+
+				drawPickingMode();
+
+				GLubyte colour[4];
+				colourUnderCursor(colour);
+
+				// Reassemble the object ID.
+				m_pickedId = colour[0] + (colour[1] << 8) + (colour[2] << 16);
+
+				m_pickedColour[0] = colour[0];
+				m_pickedColour[1] = colour[1];
+				m_pickedColour[2] = colour[2];
+
+				m_pickingMode = false;
+
+				CHECK_GL_ERRORS;
 			}
 
 			eventHandled = true;

@@ -159,6 +159,4 @@ private:
 	bool m_pickingMode;
 	unsigned int m_pickedId;
 	GLubyte m_pickedColour[3];
-
-	unsigned int m_pickingFrames;
 };
