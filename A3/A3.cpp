@@ -570,9 +570,7 @@ static void updateShaderUniforms(
 }
 
 void A3::drawPickingMode() {
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.35f, 0.35f, 0.35f, 1.0f);
 
 	glEnable(GL_DEPTH_TEST);
 	renderSceneGraph(*m_rootNode);
@@ -581,15 +579,6 @@ void A3::drawPickingMode() {
 
 void A3::colourUnderCursor(GLubyte colour[4]) const
 {
-	/*glReadPixels(
-		static_cast<int>(m_mousePos.x),
-		m_framebufferHeight - static_cast<int>(m_mousePos.y),
-		1, 1,
-		GL_RGBA,
-		GL_UNSIGNED_BYTE,
-		colour
-	);*/
-
 	double xpos, ypos;
 	glfwGetCursorPos(m_window, &xpos, &ypos);
 
@@ -895,25 +884,6 @@ bool A3::mouseButtonInputEvent (
 
 			if (button == GLFW_MOUSE_BUTTON_LEFT && jointMode()) {
 				m_pickingMode = true;
-
-				/*draw();
-				draw();
-				draw();
-
-				GLubyte colour[4];
-				colourUnderCursor(colour);
-
-				// Reassemble the object ID.
-				m_pickedId = colour[0] + (colour[1] << 8) + (colour[2] << 16);
-
-				m_pickedColour[0] = colour[0];
-				m_pickedColour[1] = colour[1];
-				m_pickedColour[2] = colour[2];
-
-				m_pickingMode = false;
-
-				CHECK_GL_ERRORS;*/
-
 				m_pickingFrames = 3;
 			}
 
