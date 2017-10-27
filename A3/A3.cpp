@@ -347,7 +347,7 @@ void A3::initViewMatrix() {
 //----------------------------------------------------------------------------------------
 void A3::initLightSources() {
 	// World-space position
-	m_light.position = vec3(-2.0f, 5.0f, 0.5f);
+	m_light.position = vec3(-0.5f, 5.0f, 2.0f);
 	m_light.rgbIntensity = vec3(0.8f); // White light
 }
 
@@ -704,6 +704,9 @@ void A3::resetOrientation() {
 void A3::resetJoints() {
 	m_commandStack.clear();
 	m_commandStackPosition = 0;
+
+	m_rootNode->resetTree();
+	m_selectedJoints.clear();
 }
 
 void A3::resetAll() {
@@ -898,6 +901,10 @@ bool A3::mouseMoveEvent (
 				doDrag = true;
 			}
 
+			if (m_selectedJoints.empty()) {
+				doDrag = false;
+			}
+
 			if (doDrag) {
 				if (!m_jointDragging) {
 					m_jointDragging = true;
@@ -917,8 +924,8 @@ bool A3::mouseMoveEvent (
 
 				vec2 mouseDelta = mousePos - m_jointDragStartMousePos;
 				vec2 degreesDelta(
-					mouseDelta.x * 2 * M_PI / windowSize.x,
-					mouseDelta.y * 2 * M_PI / windowSize.y
+					buttonRight ? mouseDelta.x * M_PI / windowSize.x : 0,
+					buttonMiddle ? mouseDelta.y * M_PI / windowSize.y : 0
 				);
 
 				const JointStates& jointStates = m_commandStack[m_commandStackPosition];

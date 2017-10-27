@@ -49,6 +49,14 @@ void SceneNode::initializeTree()
 	}
 }
 
+void SceneNode::resetTree()
+{
+	setSelected(false);
+	for (auto& child : m_children) {
+		child->resetTree();
+	}
+}
+
 //---------------------------------------------------------------------------------------
 void SceneNode::setTransform(const glm::mat4& m) {
 	m_trans = m;

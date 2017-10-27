@@ -24,6 +24,7 @@ public:
     virtual ~SceneNode();
 
 	virtual void initializeTree();
+	virtual void resetTree();
     
 	int totalSceneNodes() const;
     

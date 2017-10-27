@@ -8,6 +8,7 @@ public:
 	virtual ~JointNode();
 
 	virtual void initializeTree() override;
+	virtual void resetTree() override;
 
 	virtual void draw(IRenderSceneNode& render) const override;
 

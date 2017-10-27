@@ -28,6 +28,13 @@ void JointNode::initializeTree()
 	SceneNode::initializeTree();
 }
 
+void JointNode::resetTree()
+{
+	setRotation(glm::vec2(m_jointX.init, m_jointY.init));
+
+	SceneNode::resetTree();
+}
+
  //---------------------------------------------------------------------------------------
 void JointNode::setJointX(double min, double init, double max) {
 	m_jointX.min = static_cast<float>(degreesToRadians(min));
