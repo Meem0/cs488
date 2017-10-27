@@ -35,11 +35,21 @@ void JointNode::resetTree()
 	SceneNode::resetTree();
 }
 
+glm::mat4 JointNode::getTransform() const
+{
+	glm::mat4 rot =
+		glm::rotate(glm::mat4(), m_rotation.x, glm::vec3(1.0f, 0, 0)) *
+		glm::rotate(glm::mat4(), m_rotation.y, glm::vec3(0, 1.0f, 0));
+	return SceneNode::getTransform() * rot;
+}
+
  //---------------------------------------------------------------------------------------
 void JointNode::setJointX(double min, double init, double max) {
 	m_jointX.min = static_cast<float>(degreesToRadians(min));
 	m_jointX.init = static_cast<float>(degreesToRadians(init));
 	m_jointX.max = static_cast<float>(degreesToRadians(max));
+
+	m_rotation.x = m_jointX.init;
 }
 
 //---------------------------------------------------------------------------------------
@@ -47,6 +57,8 @@ void JointNode::setJointY(double min, double init, double max) {
 	m_jointY.min = static_cast<float>(degreesToRadians(min));
 	m_jointY.init = static_cast<float>(degreesToRadians(init));
 	m_jointY.max = static_cast<float>(degreesToRadians(max));
+
+	m_rotation.y = m_jointY.init;
 }
 
 glm::vec2 JointNode::getRotation() const {
@@ -62,11 +74,6 @@ void JointNode::setRotation(glm::vec2 rotation)
 	rotation.y = std::max(std::min(rotation.y, m_jointY.max), m_jointY.min);
 
 	m_rotation = rotation;
-
-	glm::mat4 rot =
-		glm::rotate(glm::mat4(), rotation.x, glm::vec3(1.0f, 0, 0)) *
-		glm::rotate(glm::mat4(), rotation.y, glm::vec3(0, 1.0f, 0));
-	setTransform(rot);
 }
 
 bool JointNode::isHead() const

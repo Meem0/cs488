@@ -10,6 +10,8 @@ public:
 	virtual void initializeTree() override;
 	virtual void resetTree() override;
 
+	virtual glm::mat4 getTransform() const override;
+
 	virtual void draw(IRenderSceneNode& render) const override;
 
 	void setJointX(double min, double init, double max);

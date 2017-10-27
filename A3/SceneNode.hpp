@@ -28,7 +28,7 @@ public:
     
 	int totalSceneNodes() const;
     
-    const glm::mat4& getTransform() const;
+    virtual glm::mat4 getTransform() const;
     const glm::mat4& getInverse() const;
 	unsigned int getNodeId() const;
     

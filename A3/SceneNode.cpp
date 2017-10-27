@@ -64,7 +64,7 @@ void SceneNode::setTransform(const glm::mat4& m) {
 }
 
 //---------------------------------------------------------------------------------------
-const glm::mat4& SceneNode::getTransform() const {
+glm::mat4 SceneNode::getTransform() const {
 	return m_trans;
 }
 

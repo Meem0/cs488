@@ -84,6 +84,11 @@ namespace Trackball {
 		rotVec.y *= -1.0f;
 
 		float length = glm::length(rotVec);
+
+		if (abs(length) < numeric_limits<float>::epsilon()) {
+			return mat4();
+		}
+
 		vec3 norm = glm::normalize(rotVec);
 		mat4 newMat = glm::rotate(mat4(), length, norm);
 
@@ -92,6 +97,11 @@ namespace Trackball {
 		// rotation matrix (since OpenGL wants rows stored
 		// in columns)
 		newMat = glm::transpose(newMat);
+
+		if (isnan(newMat[0][0])) {
+			throw 0;
+		}
+
 		return newMat;
 	}
 }
@@ -876,13 +886,6 @@ bool A3::mouseMoveEvent (
 					windowSize
 				);
 				m_rootRotate = m_rootRotate * rotateDelta;
-
-				if (rotateDelta[0][0] == numeric_limits<float>::infinity() ||
-					rotateDelta[0][0] == -1.0f * numeric_limits<float>::infinity() ||
-					isnan(rotateDelta[0][0])) {
-					throw 0;
-					eventHandled = true;
-				}
 
 				eventHandled = true;
 			}
