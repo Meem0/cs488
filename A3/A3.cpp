@@ -161,8 +161,7 @@ void A3::init()
 	// class.
 	unique_ptr<MeshConsolidator> meshConsolidator (new MeshConsolidator{
 			getAssetFilePath("cube.obj"),
-			getAssetFilePath("sphere.obj"),
-			getAssetFilePath("suzanne.obj")
+			getAssetFilePath("sphere.obj")
 	});
 
 	// Acquire the BatchInfoMap from the MeshConsolidator.
@@ -482,7 +481,7 @@ void A3::guiLogic()
 
 		ImGui::Text("Framerate: %.1f FPS", ImGui::GetIO().Framerate);
 
-		const mat4& rotMat = m_rootRotate;
+		/*const mat4& rotMat = m_rootRotate;
 		ImGui::Text("Rotation:");
 		ImGui::Text("%.2f %.2f %.2f %.2f", rotMat[0][0], rotMat[1][0], rotMat[2][0], rotMat[3][0]);
 		ImGui::Text("%.2f %.2f %.2f %.2f", rotMat[0][1], rotMat[1][1], rotMat[2][1], rotMat[3][1]);
@@ -499,7 +498,7 @@ void A3::guiLogic()
 		GLubyte cursorColour[4];
 		colourUnderCursor(cursorColour);
 		ImGui::Text("Mouse pos: (%.1f, %.1f)", m_mousePos.x, m_mousePos.y);
-		ImGui::Text("Colour under cursor: (%d, %d, %d)", cursorColour[0], cursorColour[1], cursorColour[2]);
+		ImGui::Text("Colour under cursor: (%d, %d, %d)", cursorColour[0], cursorColour[1], cursorColour[2]);*/
 	}
 	ImGui::End();
 }

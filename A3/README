@@ -1,0 +1,8 @@
+The lower torso segment is the root.
+The lower torso segment branches to the legs and the rest of the torso.
+The shoulders and head connect to the upper torso segment.
+
+The middle torso segment can pivot.
+The biceps and thighs have two degrees of freedom each, controlled by the middle mouse button.
+
+I mostly used the SceneNode hierarchy for the data structure.  Rendering was done by recursive functions with callbacks to A3.  Joints were kept track of by A3 for rotating, though.
