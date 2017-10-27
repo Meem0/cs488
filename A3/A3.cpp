@@ -967,7 +967,7 @@ bool A3::mouseButtonInputEvent (
 	bool eventHandled(false);
 
 	if (button >= 0 && button < NumMouseButtons) {
-		if (actions == GLFW_PRESS) {
+		if (actions == GLFW_PRESS && !ImGui::IsMouseHoveringAnyWindow()) {
 			m_mouseButtonPressed[button] = true;
 
 			if (button == GLFW_MOUSE_BUTTON_LEFT && jointMode()) {
@@ -1010,7 +1010,7 @@ bool A3::mouseButtonInputEvent (
 			bool middleButton = button == GLFW_MOUSE_BUTTON_MIDDLE;
 			bool rightButton = button == GLFW_MOUSE_BUTTON_RIGHT;
 
-			if (middleButton || rightButton) {
+			if ((middleButton && m_middleDragging) || (rightButton && m_rightDragging)) {
 				m_middleDragging = middleButton ? false : m_middleDragging;
 				m_rightDragging = rightButton ? false : m_rightDragging;
 

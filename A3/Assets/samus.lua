@@ -32,15 +32,22 @@ function inv_scale_node(name, parent, sc)
 end
 
 function upper_arm(parent, side_name, dir)
-  local shoulderJoint = gr.joint('shoulder_' .. side_name .. '_joint', {-90.0, 0.0, 40.0}, {-90.0, 0.0, 40.0})
+  local shoulderJoint = gr.joint(
+    'shoulder_' .. side_name .. '_joint',
+	--{-20.0, 0.0, 20.0},
+	zeroVec,
+	{dir > 0 and -5.0 or -120.0, 0.0, dir < 0 and 5.0 or 120.0}
+  )
   parent:add_child(shoulderJoint)
   shoulderJoint:rotate('z', dir * -90)
+  shoulderJoint:rotate('y', dir * -90)
   shoulderJoint:translate(dir * 2.0, 0.6, 0.0)
   
   local shoulder = gr.mesh('sphere', 'shoulder_' .. side_name)
   shoulderJoint:add_child(shoulder)
   shoulderScs = {1.12, 1.12, 1.12}
   set_scale(shoulder, shoulderScs)
+  shoulder:rotate('y', dir * 90)
   shoulder:rotate('z', dir * 90)
   shoulder:set_material(orange)
   
@@ -53,7 +60,11 @@ function upper_arm(parent, side_name, dir)
   shoulderDecor:translate(dir * -0.13, -0.0, 1.05)
   shoulderDecor:set_material(green)
   
-  local armJoint = gr.joint('arm_' .. side_name .. '_joint', zeroVec, {-40.0, 0.0, 90.0})
+  local armJoint = gr.joint(
+    'arm_' .. side_name .. '_joint',
+	{dir > 0 and -70.0 or -50.0, 0.0, dir > 0 and 50.0 or 70.0},
+	{-80.0, 0.0, 180.0}
+  )
   shoulderInv:add_child(armJoint)
   armJoint:rotate('z', 90)
   
@@ -67,7 +78,12 @@ function upper_arm(parent, side_name, dir)
   
   local armInv = inv_scale_node('arm_' .. side_name .. '_inv', arm, armScs)
   
-  return armInv
+  local forearmJoint = gr.joint('forearm_' .. side_name .. '_joint', zeroVec, {0.0, 0.0, 130.0})
+  armInv:add_child(forearmJoint)
+  forearmJoint:rotate('z', 90)
+  forearmJoint:translate(0.0, -0.8, 0.0)
+  
+  return forearmJoint
 end
 
 function leg(parent, side_name, dir)
@@ -84,29 +100,53 @@ function leg(parent, side_name, dir)
   thighSocketInv:rotate('z', dir * -65.0)
   set_scale(thighSocketInv, get_inv(thighSocketSc))
   
+  local thighJoint = gr.joint(
+    'thigh_' .. side_name .. '_joint',
+	{dir < 0 and -5.0 or -50.0, 0.0, dir < 0 and 50.0 or 5.0},
+	{-70.0, 0.0, 70.0}
+  )
+  thighSocketInv:add_child(thighJoint)
+  thighJoint:rotate('y', 90.0)
+  thighJoint:rotate('z', 90.0)
+  --thighJoint:translate(0.0, -1.5, 0.0)
+  
   local thigh = gr.mesh('sphere', 'thigh_' .. side_name)
-  thighSocketInv:add_child(thigh)
-  thighSc = {0.68, 2.1, 0.68}
+  thighJoint:add_child(thigh)
+  thighSc = {0.68, 1.9, 0.68}
   set_scale(thigh, thighSc)
-  thigh:translate(dir * 0.46, -1.5, 0.0)
+  thigh:translate(dir * 0.46, -1.4, 0.0)
+  thigh:rotate('z', -90.0)
+  thigh:rotate('y', -90.0)
   thigh:set_material(orange)
   
   local thighInv = inv_scale_node('thigh_' .. side_name .. '_inv', thigh, thighSc)
   
+  local calfJoint = gr.joint('calf_' .. side_name .. '_joint', zeroVec, {-130.0, 0.0, 0.0})
+  thighInv:add_child(calfJoint)
+  calfJoint:rotate('z', 90)
+  calfJoint:translate(0.0, -1.0, 0.0)
+  
   local calf = gr.mesh('sphere', 'calf_' .. side_name)
-  thighInv:add_child(calf)
+  calfJoint:add_child(calf)
   calfSc = {0.6, 1.9, 0.6}
   set_scale(calf, calfSc)
-  calf:translate(0.0, -2.5, 0.0)
+  calf:translate(0.0, -2.1, 0.0)
+  calf:rotate('z', -90)
   calf:set_material(orange)
   
   local calfInv = inv_scale_node('calf_' .. side_name .. '_inv', calf, calfSc)
   
+  local footJoint = gr.joint('foot_' .. side_name .. '_joint', zeroVec, {-30.0, 0.0, 30.0})
+  calfInv:add_child(footJoint)
+  footJoint:rotate('z', 90)
+  footJoint:translate(0.0, -0.9, 0.0)
+  
   local foot = gr.mesh('sphere', 'foot_' .. side_name)
-  calfInv:add_child(foot)
+  footJoint:add_child(foot)
   footSc = {0.45, 0.45, 0.9}
   set_scale(foot, footSc)
-  foot:translate(0.0, -1.6, 0.5)
+  foot:translate(0.0, -0.7, 0.5)
+  foot:rotate('z', -90)
   foot:set_material(orange)
   
   return foot
@@ -117,22 +157,25 @@ rootnode:scale(0.25, 0.25, 0.25)
 rootnode:rotate('y', -20.0)
 rootnode:translate(0.0, 0.0, -1.0)
 
-torsoMid = gr.mesh('sphere', 'torso_mid')
-rootnode:add_child(torsoMid)
-torsoMidScs = {1.3, 1.2, 1.1}
-set_scale(torsoMid, torsoMidScs)
-torsoMid:set_material(yellow)
-
-torsoMidInv = inv_scale_node('torso_mid_inv', torsoMid, torsoMidScs)
-
 torsoLow = gr.mesh('sphere', 'torso_low')
-torsoMidInv:add_child(torsoLow)
+rootnode:add_child(torsoLow)
 torsoLowScs = {1.0, 1.4, 1.0}
 set_scale(torsoLow, torsoLowScs)
-torsoLow:translate(0.0, -2.0, 0.0)
 torsoLow:set_material(yellow)
 
 torsoLowInv = inv_scale_node('torso_low_inv', torsoLow, torsoLowScs)
+
+local torsoLowJoint = gr.joint('torso_low_joint', zeroVec, {-30.0, 0.0, 30.0})
+torsoLowInv:add_child(torsoLowJoint)
+
+torsoMid = gr.mesh('sphere', 'torso_mid')
+torsoLowJoint:add_child(torsoMid)
+torsoMidScs = {1.3, 1.2, 1.1}
+set_scale(torsoMid, torsoMidScs)
+torsoMid:translate(0.0, 2.0, 0.0)
+torsoMid:set_material(yellow)
+
+torsoMidInv = inv_scale_node('torso_mid_inv', torsoMid, torsoMidScs)
 
 torsoUp = gr.mesh('sphere', 'torso_up')
 torsoMidInv:add_child(torsoUp)
@@ -152,7 +195,7 @@ neckSocket:set_material(black)
 
 torsoUpInv = inv_scale_node('torso_up_inv', torsoUp, torsoUpScs)
 
-neckJoint = gr.joint('neckJoint', {-30.0, 0.0, 30.0}, {-30.0, 0.0, 30.0})
+neckJoint = gr.joint('neckJoint', {-70.0, 0.0, 70.0}, {-20.0, 0.0, 30.0})
 torsoUpInv:add_child(neckJoint)
 neckJoint:rotate('z', 90.0)
 neckJoint:translate(0.0, 1.5, 0.0)
@@ -194,22 +237,30 @@ leftForearm = gr.mesh('sphere', 'left_forearm')
 leftArm:add_child(leftForearm)
 leftForearmScs = {0.45, 0.8, 0.45}
 set_scale(leftForearm, leftForearmScs)
-leftForearm:translate(0.0, -1.5, 0.0)
+leftForearm:translate(0.0, -0.7, 0.0)
+leftForearm:rotate('z', -90.0)
 leftForearm:set_material(orange)
 
 leftForearmInv = inv_scale_node('left_forearm_inv', leftForearm, leftForearmScs)
 
+handJoint = gr.joint('hand_joint', zeroVec, {-40.0, 0.0, 130.0})
+leftForearmInv:add_child(handJoint)
+handJoint:rotate('z', 90)
+handJoint:translate(0.0, -0.8, 0.0)
+
 leftHand = gr.mesh('sphere', 'left_hand')
-leftForearmInv:add_child(leftHand)
+handJoint:add_child(leftHand)
 leftHand:scale(0.35, 0.5, 0.2)
-leftHand:translate(0.0, -1.0, 0.0)
+leftHand:translate(0.0, -0.3, 0.0)
+leftHand:rotate('z', -90)
 leftHand:set_material(orange)
 
 cannon = gr.mesh('sphere', 'cannon')
 rightArm:add_child(cannon)
 cannonScs = {0.6, 1.6, 0.6}
 set_scale(cannon, cannonScs)
-cannon:translate(0.0, -1.7, 0.0)
+cannon:translate(0.0, -0.9, 0.0)
+cannon:rotate('z', -90.0)
 cannon:set_material(blue)
 
 cannonInv = inv_scale_node('cannon_inv', cannon, cannonScs)
