@@ -21,8 +21,10 @@ JointNode::~JointNode() {
 
 void JointNode::initializeTree()
 {
-	for (auto& child : m_children) {
-		child->setParentJoint(this);
+	if (m_jointX.min != m_jointX.max || m_jointY.min != m_jointY.max) {
+		for (auto& child : m_children) {
+			child->setParentJoint(this);
+		}
 	}
 
 	SceneNode::initializeTree();

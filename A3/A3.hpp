@@ -166,8 +166,11 @@ private:
 
 	int m_jointMode;
 
-	bool m_jointDragging;
-	glm::vec2 m_jointDragStartMousePos;
+	JointStates m_currentCommandMiddle;
+	bool m_middleDragging;
+
+	JointStates m_currentCommandRight;
+	bool m_rightDragging;
 
 	const static int NumMouseButtons = 3;
 	bool m_mouseButtonPressed[NumMouseButtons];

@@ -123,9 +123,10 @@ A3::A3(const std::string & luaSceneFile)
 	, m_backfaceCulling(false)
 	, m_frontfaceCulling(false)
 	, m_jointMode(0)
-	, m_jointDragging(false)
 	, m_mouseButtonPressed{false, false, false}
 	, m_pickingMode(false)
+	, m_middleDragging(false)
+	, m_rightDragging(false)
 {
 }
 
@@ -163,7 +164,6 @@ void A3::init()
 			getAssetFilePath("sphere.obj"),
 			getAssetFilePath("suzanne.obj")
 	});
-
 
 	// Acquire the BatchInfoMap from the MeshConsolidator.
 	meshConsolidator->getBatchInfoMap(m_batchInfoMap);
@@ -357,7 +357,7 @@ void A3::initViewMatrix() {
 //----------------------------------------------------------------------------------------
 void A3::initLightSources() {
 	// World-space position
-	m_light.position = vec3(-0.5f, 5.0f, 2.0f);
+	m_light.position = vec3(-0.5f, 1.0f, 2.0f);
 	m_light.rgbIntensity = vec3(0.8f); // White light
 }
 
@@ -853,9 +853,9 @@ bool A3::mouseMoveEvent (
 		bool buttonLeft = m_mouseButtonPressed[GLFW_MOUSE_BUTTON_LEFT];
 		bool buttonMiddle = m_mouseButtonPressed[GLFW_MOUSE_BUTTON_MIDDLE];
 		bool buttonRight = m_mouseButtonPressed[GLFW_MOUSE_BUTTON_RIGHT];
+		vec2 mouseDelta = mousePos - m_mousePos;
 
 		if (!jointMode()) {
-			vec2 mouseDelta = mousePos - m_mousePos;
 			vec3 translateDelta;
 
 			if (buttonLeft) {
@@ -890,56 +890,60 @@ bool A3::mouseMoveEvent (
 				eventHandled = true;
 			}
 		}
-		else if (buttonMiddle || buttonRight) {
-			bool doDrag = false;
+		else {
+			if (buttonMiddle) {
+				if (!m_middleDragging) {
+					m_middleDragging = true;
+
+					for (const auto& joint : m_selectedJoints) {
+						m_currentCommandMiddle.push_back(JointState{
+							joint->getNodeId(),
+							joint->getRotation(),
+							vec2()
+						});
+					}
+				}
+
+				if (!m_currentCommandMiddle.empty()) {
+					vec2 degreesDelta(
+						mouseDelta.x * M_PI / windowSize.x,
+						mouseDelta.y * M_PI / windowSize.y
+					);
+
+					for (const auto& jointState : m_currentCommandMiddle) {
+						JointNode& jointNode = getJoint(jointState.jointId);
+
+						vec2 degreesDeltaToUse = degreesDelta;
+						if (jointNode.isHead()) {
+							degreesDeltaToUse.x = 0;
+						}
+
+						vec2 rotation = jointNode.getRotation() + degreesDeltaToUse;
+						jointNode.setRotation(rotation);
+					}
+				}
+			}
 			if (buttonRight) {
-				for (const auto& jointNode : m_selectedJoints) {
-					if (jointNode->isHead()) {
-						doDrag = true;
-						break;
+				if (!m_rightDragging) {
+					m_rightDragging = true;
+
+					for (const auto& joint : m_selectedJoints) {
+						if (joint->isHead()) {
+							m_currentCommandRight.push_back(JointState{
+								joint->getNodeId(),
+								joint->getRotation(),
+								vec2()
+							});
+						}
 					}
 				}
-			}
-			else {
-				doDrag = true;
-			}
 
-			if (m_selectedJoints.empty()) {
-				doDrag = false;
-			}
+				if (!m_currentCommandRight.empty()) {
+					vec2 degreesDelta(mouseDelta.x * M_PI / windowSize.x, 0);
 
-			if (doDrag) {
-				if (!m_jointDragging) {
-					m_jointDragging = true;
-					m_jointDragStartMousePos = mousePos;
+					JointNode& jointNode = getJoint(m_currentCommandRight[0].jointId);
 
-					if (m_commandStackPosition < m_commandStack.size()) {
-						auto itr = m_commandStack.begin() + m_commandStackPosition;
-						m_commandStack.erase(itr, m_commandStack.end());
-					}
-
-					JointStates states;
-					for (const auto& jointNode : m_selectedJoints) {
-						states.push_back(JointState{ jointNode->getNodeId(), jointNode->getRotation(), vec2() });
-					}
-					m_commandStack.push_back(move(states));
-				}
-
-				vec2 mouseDelta = mousePos - m_jointDragStartMousePos;
-				vec2 degreesDelta(
-					buttonRight ? mouseDelta.x * M_PI / windowSize.x : 0,
-					buttonMiddle ? mouseDelta.y * M_PI / windowSize.y : 0
-				);
-
-				const JointStates& jointStates = m_commandStack[m_commandStackPosition];
-				for (const auto& jointState : jointStates) {
-					JointNode& jointNode = getJoint(jointState.jointId);
-
-					if (!buttonMiddle && !jointNode.isHead()) {
-						continue;
-					}
-
-					vec2 rotation = jointState.from + degreesDelta;
+					vec2 rotation = jointNode.getRotation() + degreesDelta;
 					jointNode.setRotation(rotation);
 				}
 			}
@@ -1003,16 +1007,45 @@ bool A3::mouseButtonInputEvent (
 		else if (actions == GLFW_RELEASE) {
 			m_mouseButtonPressed[button] = false;
 
-			if (m_jointDragging) {
-				m_jointDragging = false;
+			bool middleButton = button == GLFW_MOUSE_BUTTON_MIDDLE;
+			bool rightButton = button == GLFW_MOUSE_BUTTON_RIGHT;
 
-				auto& jointStates = m_commandStack[m_commandStackPosition];
-				for (auto& jointState : jointStates) {
+			if (middleButton || rightButton) {
+				m_middleDragging = middleButton ? false : m_middleDragging;
+				m_rightDragging = rightButton ? false : m_rightDragging;
+
+				JointStates& command = middleButton ? m_currentCommandMiddle : m_currentCommandRight;
+
+				bool change = false;
+				for (auto& jointState : command) {
 					JointNode& joint = getJoint(jointState.jointId);
 					jointState.to = joint.getRotation();
+
+					if (joint.isHead()) {
+						if (middleButton && jointState.from.y != jointState.to.y) {
+							change = true;
+						}
+						if (rightButton && jointState.from.x != jointState.to.x) {
+							change = true;
+						}
+					}
+					else if (jointState.from != jointState.to) {
+						change = true;
+					}
 				}
 
-				++m_commandStackPosition;
+				if (change) {
+					if (m_commandStackPosition < m_commandStack.size()) {
+						auto itr = m_commandStack.begin() + m_commandStackPosition;
+						m_commandStack.erase(itr, m_commandStack.end());
+					}
+
+					m_commandStack.push_back(command);
+
+					++m_commandStackPosition;
+				}
+
+				command.clear();
 			}
 
 			eventHandled = true;
@@ -1121,6 +1154,12 @@ bool A3::keyInputEvent (
 		}
 		if (key == GLFW_KEY_J) {
 			m_jointMode = 1;
+			eventHandled = true;
+		}
+		if (key == GLFW_KEY_X) {
+			processLuaSceneFile(m_luaSceneFile);
+			m_rootNode->initializeTree();
+
 			eventHandled = true;
 		}
 	}
