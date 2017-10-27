@@ -14,6 +14,8 @@ using namespace std;
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <limits>
+#include <algorithm>
+#include <cassert>
 
 using namespace glm;
 
@@ -584,6 +586,22 @@ void A3::colourUnderCursor(GLubyte colour[4]) const
 	CHECK_GL_ERRORS;
 }
 
+JointNode& A3::getJoint(unsigned int id)
+{
+	auto itr = m_jointCache.find(id);
+	if (itr != m_jointCache.end()) {
+		return *(itr->second);
+	}
+
+	SceneNode* node = m_rootNode->getNode(id);
+	assert(node != nullptr);
+	assert(dynamic_cast<JointNode*>(node) != nullptr);
+
+	JointNode* ret = static_cast<JointNode*>(node);
+	m_jointCache.emplace(make_pair(id, ret));
+	return *ret;
+}
+
 //----------------------------------------------------------------------------------------
 /*
  * Called once per frame, after guiLogic().
@@ -699,10 +717,28 @@ void A3::quit() {
 
 void A3::undo()
 {
+	assert(canUndo());
+
+	--m_commandStackPosition;
+
+	const JointStates& jointStates = m_commandStack[m_commandStackPosition];
+	for (const JointState& jointState : jointStates) {
+		JointNode& joint = getJoint(jointState.jointId);
+		joint.setTransform(jointState.from);
+	}
 }
 
 void A3::redo()
 {
+	assert(canRedo());
+
+	const JointStates& jointStates = m_commandStack[m_commandStackPosition];
+	for (const JointState& jointState : jointStates) {
+		JointNode& joint = getJoint(jointState.jointId);
+		joint.setTransform(jointState.to);
+	}
+
+	++m_commandStackPosition;
 }
 
 bool A3::canUndo() const {
@@ -802,7 +838,10 @@ bool A3::mouseMoveEvent (
 
 		vec2 mouseDelta = mousePos - m_mousePos;
 
-		if (!jointMode()) {
+		if (jointMode()) {
+
+		}
+		else {
 			vec3 translateDelta;
 
 			if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_LEFT]) {
@@ -878,8 +917,21 @@ bool A3::mouseButtonInputEvent (
 				unsigned int pickedId = colour[0] + (colour[1] << 8) + (colour[2] << 16);
 
 				SceneNode* pickedNode = m_rootNode->getNode(pickedId);
-				if (pickedNode != nullptr && pickedNode->getParentJoint() != nullptr) {
-					pickedNode->setSelected(!pickedNode->isSelected());
+				if (pickedNode != nullptr) {
+					JointNode* parentJoint = pickedNode->getParentJoint();
+					if (parentJoint != nullptr) {
+						bool selected = !pickedNode->isSelected();
+						pickedNode->setSelected(selected);
+
+						if (selected) {
+							m_selectedJoints.push_back(parentJoint);
+						}
+						else {
+							auto itr = find(m_selectedJoints.begin(), m_selectedJoints.end(), parentJoint);
+							assert(itr != m_selectedJoints.end());
+							m_selectedJoints.erase(itr);
+						}
+					}
 				}
 
 				m_pickingMode = false;

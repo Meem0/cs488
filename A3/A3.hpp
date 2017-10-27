@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <functional>
+#include <unordered_map>
 
 struct LightSource {
 	glm::vec3 position;
@@ -124,6 +125,8 @@ private:
 	void drawPickingMode();
 	void colourUnderCursor(GLubyte[4]) const;
 
+	JointNode& getJoint(unsigned int id);
+
 	class RenderSceneNode : public IRenderSceneNode {
 	public:
 		RenderSceneNode(A3& a3);
@@ -142,8 +145,19 @@ private:
 	glm::mat4 m_rootRotate;
 	glm::mat4 m_rootTranslate;
 
-	std::vector<int> m_commandStack;
-	unsigned int m_commandStackPosition;
+	struct JointState {
+		unsigned int jointId;
+		glm::mat4 from;
+		glm::mat4 to;
+	};
+	typedef std::vector<JointState> JointStates;
+	typedef std::vector<JointStates> CommandStack;
+
+	CommandStack m_commandStack;
+	unsigned int m_commandStackPosition; // index of the next command
+
+	std::vector<JointNode*> m_selectedJoints;
+	std::unordered_map<unsigned int, JointNode*> m_jointCache;
 
 	bool m_drawCircle;
 	bool m_useZBuffer;
