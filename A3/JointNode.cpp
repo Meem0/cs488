@@ -36,6 +36,11 @@ void JointNode::setJointY(double min, double init, double max) {
 	m_jointY.max = max;
 }
 
+bool JointNode::isHead() const
+{
+	return m_name.compare("neckJoint") == 0;
+}
+
 std::string JointNode::getDebugString() const
 {
 	return "JointNode";

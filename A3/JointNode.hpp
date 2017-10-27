@@ -14,6 +14,8 @@ public:
 	void setJointX(double min, double init, double max);
 	void setJointY(double min, double init, double max);
 
+	bool isHead() const;
+
 protected:
 	virtual std::string getDebugString() const override;
 

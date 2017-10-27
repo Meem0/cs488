@@ -58,6 +58,7 @@ protected:
 	void drawCommon(IRenderSceneNode& render) const;
 
 	std::vector<std::unique_ptr<SceneNode>> m_children;
+	std::string m_name;
 
 private:
 	SceneNode(const SceneNode & other) = delete;
@@ -71,6 +72,5 @@ private:
 	glm::mat4 m_trans;
 	glm::mat4 m_invtrans;
 
-	std::string m_name;
 	unsigned int m_nodeId;
 };
