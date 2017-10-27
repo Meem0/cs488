@@ -113,6 +113,7 @@ A3::A3(const std::string & luaSceneFile)
 	, m_backfaceCulling(false)
 	, m_frontfaceCulling(false)
 	, m_jointMode(0)
+	, m_jointDragging(false)
 	, m_mouseButtonPressed{false, false, false}
 	, m_pickingMode(false)
 {
@@ -838,8 +839,22 @@ bool A3::mouseMoveEvent (
 
 		vec2 mouseDelta = mousePos - m_mousePos;
 
-		if (jointMode()) {
+		if (jointMode() && (m_mouseButtonPressed[0] || m_mouseButtonPressed[1] || m_mouseButtonPressed[2])) {
+			if (!m_jointDragging) {
+				m_jointDragging = true;
+				m_jointDragStartMousePos = mousePos;
 
+				if (m_commandStackPosition < m_commandStack.size()) {
+					auto itr = m_commandStack.begin() + m_commandStackPosition;
+					m_commandStack.erase(itr, m_commandStack.end());
+				}
+
+				JointStates states;
+				for (const auto& jointNode : m_selectedJoints) {
+					states.push_back(JointState{ jointNode->getNodeId(), jointNode->getTransform(), mat4() });
+				}
+				m_commandStack.push_back(move(states));
+			}
 		}
 		else {
 			vec3 translateDelta;
@@ -941,6 +956,19 @@ bool A3::mouseButtonInputEvent (
 		}
 		else if (actions == GLFW_RELEASE) {
 			m_mouseButtonPressed[button] = false;
+
+			if (m_jointDragging) {
+				m_jointDragging = false;
+
+				auto& jointStates = m_commandStack[m_commandStackPosition];
+				for (auto& jointState : jointStates) {
+					JointNode& joint = getJoint(jointState.jointId);
+					jointState.to = joint.getTransform();
+				}
+
+				++m_commandStackPosition;
+			}
+
 			eventHandled = true;
 		}
 	}
