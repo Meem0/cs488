@@ -147,8 +147,8 @@ private:
 
 	struct JointState {
 		unsigned int jointId;
-		glm::mat4 from;
-		glm::mat4 to;
+		glm::vec2 from;
+		glm::vec2 to;
 	};
 	typedef std::vector<JointState> JointStates;
 	typedef std::vector<JointStates> CommandStack;

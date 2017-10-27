@@ -14,6 +14,9 @@ public:
 	void setJointX(double min, double init, double max);
 	void setJointY(double min, double init, double max);
 
+	glm::vec2 getRotation() const;
+	void setRotation(glm::vec2);
+
 	bool isHead() const;
 
 protected:
@@ -21,9 +24,11 @@ protected:
 
 private:
 	struct JointRange {
-		double min, init, max;
+		float min, init, max;
 	};
 
 	JointRange m_jointX;
 	JointRange m_jointY;
+
+	glm::vec2 m_rotation;
 };

@@ -725,7 +725,7 @@ void A3::undo()
 	const JointStates& jointStates = m_commandStack[m_commandStackPosition];
 	for (const JointState& jointState : jointStates) {
 		JointNode& joint = getJoint(jointState.jointId);
-		joint.setTransform(jointState.from);
+		joint.setRotation(jointState.from);
 	}
 }
 
@@ -736,7 +736,7 @@ void A3::redo()
 	const JointStates& jointStates = m_commandStack[m_commandStackPosition];
 	for (const JointState& jointState : jointStates) {
 		JointNode& joint = getJoint(jointState.jointId);
-		joint.setTransform(jointState.to);
+		joint.setRotation(jointState.to);
 	}
 
 	++m_commandStackPosition;
@@ -837,11 +837,15 @@ bool A3::mouseMoveEvent (
 			static_cast<float>(m_windowHeight)
 		);
 
+		bool buttonLeft = m_mouseButtonPressed[GLFW_MOUSE_BUTTON_LEFT];
+		bool buttonMiddle = m_mouseButtonPressed[GLFW_MOUSE_BUTTON_MIDDLE];
+		bool buttonRight = m_mouseButtonPressed[GLFW_MOUSE_BUTTON_RIGHT];
+
 		if (!jointMode()) {
 			vec2 mouseDelta = mousePos - m_mousePos;
 			vec3 translateDelta;
 
-			if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_LEFT]) {
+			if (buttonLeft) {
 				float xSensitivity = 1.0f / windowSize.x;
 				float ySensitivity = -1.0f / windowSize.y;
 
@@ -850,7 +854,7 @@ bool A3::mouseMoveEvent (
 
 				eventHandled = true;
 			}
-			if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_MIDDLE]) {
+			if (buttonMiddle) {
 				float zSensitivity = 1.0f / windowSize.y;
 
 				translateDelta.z = mouseDelta.y * zSensitivity;
@@ -862,7 +866,7 @@ bool A3::mouseMoveEvent (
 				m_rootTranslate = glm::translate(m_rootTranslate, translateDelta);
 			}
 
-			if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_RIGHT]) {
+			if (buttonRight) {
 				mat4 rotateDelta = Trackball::getTrackballRotate(
 					m_mousePos,
 					mousePos,
@@ -880,9 +884,9 @@ bool A3::mouseMoveEvent (
 				eventHandled = true;
 			}
 		}
-		else if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_MIDDLE] || m_mouseButtonPressed[GLFW_MOUSE_BUTTON_RIGHT]) {
+		else if (buttonMiddle || buttonRight) {
 			bool doDrag = false;
-			if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_RIGHT]) {
+			if (buttonRight) {
 				for (const auto& jointNode : m_selectedJoints) {
 					if (jointNode->isHead()) {
 						doDrag = true;
@@ -906,28 +910,27 @@ bool A3::mouseMoveEvent (
 
 					JointStates states;
 					for (const auto& jointNode : m_selectedJoints) {
-						states.push_back(JointState{ jointNode->getNodeId(), jointNode->getTransform(), mat4() });
+						states.push_back(JointState{ jointNode->getNodeId(), jointNode->getRotation(), vec2() });
 					}
 					m_commandStack.push_back(move(states));
 				}
 
 				vec2 mouseDelta = mousePos - m_jointDragStartMousePos;
 				vec2 degreesDelta(
-					mouseDelta.x * 5.0f / windowSize.x,
-					mouseDelta.y * 5.0f / windowSize.y
+					mouseDelta.x * 2 * M_PI / windowSize.x,
+					mouseDelta.y * 2 * M_PI / windowSize.y
 				);
 
-				mat4 rotation = glm::rotate(mat4(), degreesDelta.x, vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(mat4(), degreesDelta.y, vec3(0, 1.0f, 0));
 				const JointStates& jointStates = m_commandStack[m_commandStackPosition];
 				for (const auto& jointState : jointStates) {
 					JointNode& jointNode = getJoint(jointState.jointId);
 
-					if (m_mouseButtonPressed[GLFW_MOUSE_BUTTON_RIGHT] && !jointNode.isHead()) {
+					if (!buttonMiddle && !jointNode.isHead()) {
 						continue;
 					}
 
-					mat4 transform = jointState.from * rotation;
-					jointNode.setTransform(transform);
+					vec2 rotation = jointState.from + degreesDelta;
+					jointNode.setRotation(rotation);
 				}
 			}
 		}
@@ -996,7 +999,7 @@ bool A3::mouseButtonInputEvent (
 				auto& jointStates = m_commandStack[m_commandStackPosition];
 				for (auto& jointState : jointStates) {
 					JointNode& joint = getJoint(jointState.jointId);
-					jointState.to = joint.getTransform();
+					jointState.to = joint.getRotation();
 				}
 
 				++m_commandStackPosition;
