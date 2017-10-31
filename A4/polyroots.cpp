@@ -88,10 +88,10 @@ static double PolishRoot(
  * root function.
  */
 #ifdef _WIN32
-static double cbrt( double t )
+/*static double cbrt( double t )
 {
 	return pow( t, 1.0/3.0 );
-}	
+}*/
 #endif
 
 /*
