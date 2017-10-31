@@ -5,8 +5,8 @@ using namespace std;
 
 int main( int argc, char **argv ) 
 {
-	if (argc > 1) {
-		std::string luaSceneFile(argv[1]);
+	if (argc > 0) {
+		std::string luaSceneFile(argc > 1 ? argv[1] : "Assets/puppet.lua");
 		std::string title("Assignment 3 - [");
 		title += luaSceneFile;
 		title += "]";
