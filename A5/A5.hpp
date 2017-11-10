@@ -32,4 +32,19 @@ private:
 	const static int NumMouseButtons = 3;
 	bool m_mouseButtonPressed[NumMouseButtons];
 	glm::vec2 m_mousePos;
+
+	void initGeom();
+
+	// Fields related to the shader and uniforms.
+	ShaderProgram m_shader;
+	GLint m_uniformP; // Uniform location for Projection matrix.
+	GLint m_uniformV; // Uniform location for View matrix.
+	GLint m_uniformM; // Uniform location for Model matrix.
+	GLint m_uniformColour;
+
+	GLuint m_vaoPlane; // Vertex Array Object
+	GLuint m_vboPlane; // Vertex Buffer Object
+
+	glm::mat4 m_projMat;
+	glm::mat4 m_viewMat;
 };

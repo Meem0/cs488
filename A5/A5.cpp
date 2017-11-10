@@ -1,15 +1,13 @@
 #include "A5.hpp"
 
-using namespace std;
-
 #include "cs488-framework/GlErrorCheck.hpp"
 #include "cs488-framework/MathUtils.hpp"
 
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/io.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 using namespace glm;
+using namespace std;
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -22,7 +20,6 @@ A5::A5()
 // Destructor
 A5::~A5()
 {
-
 }
 
 //----------------------------------------------------------------------------------------
@@ -31,6 +28,36 @@ A5::~A5()
  */
 void A5::init()
 {
+	// Set the background colour.
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+
+	// Build the shader
+	m_shader.generateProgramObject();
+	m_shader.attachVertexShader(
+		getAssetFilePath("VertexShader.vs").c_str());
+	m_shader.attachFragmentShader(
+		getAssetFilePath("FragmentShader.fs").c_str());
+	m_shader.link();
+
+	// Set up the uniforms
+	m_uniformP = m_shader.getUniformLocation("P");
+	m_uniformV = m_shader.getUniformLocation("V");
+	m_uniformM = m_shader.getUniformLocation("M");
+	m_uniformColour = m_shader.getUniformLocation("colour");
+
+	initGeom();
+
+	// Set up initial view and projection matrices (need to do this here,
+	// since it depends on the GLFW window being set up correctly).
+	m_viewMat = glm::lookAt(
+		glm::vec3(0.0f, 1.0f, 2.0f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f));
+
+	m_projMat = glm::perspective(
+		glm::radians(45.0f),
+		float(m_framebufferWidth) / float(m_framebufferHeight),
+		1.0f, 1000.0f);
 }
 
 //----------------------------------------------------------------------------------------
@@ -55,6 +82,27 @@ void A5::guiLogic()
  */
 void A5::draw()
 {
+	// Create a global transformation for the model (centre it).
+	mat4 M;
+
+	m_shader.enable();
+	glEnable(GL_DEPTH_TEST);
+
+	glUniformMatrix4fv(m_uniformP, 1, GL_FALSE, value_ptr(m_projMat));
+	glUniformMatrix4fv(m_uniformV, 1, GL_FALSE, value_ptr(m_viewMat));
+	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
+
+	// Just draw the grid for now.
+	glBindVertexArray(m_vaoPlane);
+	glUniform3f(m_uniformColour, 0.5f, 0.7f, 0.5f);
+	glDrawArrays(GL_TRIANGLES, 0, 2 * 3);
+
+	m_shader.disable();
+
+	// Restore defaults
+	glBindVertexArray(0);
+
+	CHECK_GL_ERRORS;
 }
 
 //----------------------------------------------------------------------------------------
@@ -167,4 +215,37 @@ bool A5::keyInputEvent (
 	bool eventHandled(false);
 
 	return eventHandled;
+}
+
+void A5::initGeom()
+{
+	const std::size_t numVerts = 6;
+	vec3 verts[numVerts];
+	verts[0] = vec3(-1.0f, 0, -1.0f);
+	verts[1] = vec3(-1.0f, 0, 1.0f);
+	verts[2] = vec3(1.0f, 0, 1.0f);
+	verts[3] = vec3(-1.0f, 0, -1.0f);
+	verts[4] = vec3(1.0f, 0, 1.0f);
+	verts[5] = vec3(1.0f, 0, -1.0f);
+
+	// Create the vertex array to record buffer assignments.
+	glGenVertexArrays(1, &m_vaoPlane);
+	glBindVertexArray(m_vaoPlane);
+
+	// Create the plane vertex buffer
+	glGenBuffers(1, &m_vboPlane);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboPlane);
+	glBufferData(GL_ARRAY_BUFFER, numVerts * sizeof(vec3), verts, GL_STATIC_DRAW);
+
+	// Specify the means of extracting the position values properly.
+	GLint posAttrib = m_shader.getAttribLocation("position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Reset state
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	CHECK_GL_ERRORS;
 }
