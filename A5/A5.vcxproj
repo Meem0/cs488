@@ -146,7 +146,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\shared\cs488-framework\CS488Window.cpp" />
     <ClCompile Include="..\shared\cs488-framework\GlErrorCheck.cpp" />
     <ClCompile Include="..\shared\cs488-framework\MeshConsolidator.cpp" />
     <ClCompile Include="..\shared\cs488-framework\ObjFileDecoder.cpp" />
@@ -157,6 +156,7 @@
     <ClCompile Include="..\shared\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\shared\imgui\imgui_impl_glfw_gl3.cpp" />
     <ClCompile Include="A5.cpp" />
+    <ClCompile Include="lib\CS488WindowCustom.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
