@@ -47,4 +47,7 @@ private:
 
 	glm::mat4 m_projMat;
 	glm::mat4 m_viewMat;
+
+	glm::vec3 m_cameraPos;
+	glm::vec2 m_cameraAngle;
 };

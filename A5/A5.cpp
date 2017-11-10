@@ -13,6 +13,7 @@ using namespace std;
 // Constructor
 A5::A5()
 	: m_mouseButtonPressed{false, false, false}
+	, m_mousePos(0, 0)
 {
 }
 
@@ -49,13 +50,16 @@ void A5::init()
 
 	// Set up initial view and projection matrices (need to do this here,
 	// since it depends on the GLFW window being set up correctly).
-	m_viewMat = glm::lookAt(
-		glm::vec3(0.0f, 1.0f, 2.0f),
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f));
+	m_cameraPos = vec3(0, 1.0f, 4.0f);
+	m_cameraAngle = vec2(degreesToRadians(90.0f), 0);
 
-	m_projMat = glm::perspective(
-		glm::radians(45.0f),
+	/*m_viewMat = glm::lookAt(
+		m_cameraPos,
+		m_cameraPos + vec3(0.0f, 0.0f, -1.0f),
+		vec3(0.0f, 1.0f, 0.0f));*/
+
+	m_projMat = perspective(
+		radians(45.0f),
 		float(m_framebufferWidth) / float(m_framebufferHeight),
 		1.0f, 1000.0f);
 }
@@ -143,7 +147,26 @@ bool A5::mouseMoveEvent (
 		static_cast<float>(yPos)
 	);
 
+	float sensitivityX = degreesToRadians(540.0f) / m_windowWidth;
+	float sensitivityY = degreesToRadians(540.0f) / m_windowHeight;
+
+	vec2 angleDelta(
+		sensitivityX * (mousePos.x - m_mousePos.x),
+		sensitivityY * (mousePos.y - m_mousePos.y)
+	);
+
+	m_cameraAngle += angleDelta;
+
+	//mat4 view = glm::lookAt(m_cameraPos, m_cameraPos + vec3(0, 0, -1.0f), vec3(0, 1.0f, 0));
+	mat4 trans = glm::translate(mat4(), vec3() - m_cameraPos);
+	mat4 rot = glm::rotate(mat4(), m_cameraAngle.x, vec3(0, 1.0f, 0));
+	//m_viewMat = glm::rotate(m_viewMat, angleDelta.y, vec3(1.0f, 0, 0));
+
+	m_viewMat = rot * trans;
+
 	m_mousePos = mousePos;
+
+	eventHandled = true;
 
 	return eventHandled;
 }
