@@ -12,6 +12,7 @@ using namespace glm;
 Camera::Camera()
 	: m_needToRecalculateViewMatrix(false)
 	, m_directionPressed{ false, false, false, false }
+	, m_speed(4.0f)
 {
 }
 
@@ -44,10 +45,10 @@ void Camera::update(double deltaTime)
 		quat lookDir = glm::angleAxis(-m_angle.x, vec3(0, 1.0f, 0));
 		lookDir = glm::rotate(lookDir, -m_angle.y, vec3(1.0f, 0, 0));
 
-		const static float Speed = static_cast<float>(4.0 * deltaTime);
+		float speed = static_cast<float>(m_speed * deltaTime);
 		float fx = static_cast<float>(x);
 		float fz = static_cast<float>(z);
-		vec3 moveVec = Speed * normalize(vec3(fx, 0.0f, fz));
+		vec3 moveVec = speed * normalize(vec3(fx, 0.0f, fz));
 		moveVec = glm::rotate(lookDir, moveVec);
 
 		moveTo(m_position + moveVec);
@@ -70,6 +71,11 @@ void Camera::rotate(glm::vec2 angleDelta)
 	m_angle.y = std::max(m_angle.y, minY);
 
 	m_needToRecalculateViewMatrix = true;
+}
+
+void Camera::setSpeed(float speed)
+{
+	m_speed = speed;
 }
 
 void Camera::setDirectionPressed(Direction dir, bool pressed)

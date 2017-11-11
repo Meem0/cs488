@@ -44,6 +44,8 @@ private:
 
 	bool m_wireframeMode;
 
+	float m_movementSpeed;
+
 	float m_planeWidth;
 	float m_planeTileCountSlider;
 	std::size_t m_planeTileCount;

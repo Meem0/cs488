@@ -34,10 +34,11 @@ A5::A5()
 	: m_mouseButtonPressed{ false, false, false }
 	, m_mousePos(0, 0)
 	, m_showMouse(false)
-	, m_planeTileCount(256)
+	, m_planeTileCount(128)
 	, m_planeWidth(128.0f)
 	, m_wireframeMode(false)
 	, m_heightScaleFactor(1.0f)
+	, m_movementSpeed(4.0f)
 {
 	m_planeTileCountSlider = static_cast<float>(m_planeTileCount);
 }
@@ -114,6 +115,10 @@ void A5::guiLogic()
 		glfwSetWindowShouldClose(m_window, GL_TRUE);
 	}
 	ImGui::Text("Framerate: %.1f FPS", ImGui::GetIO().Framerate);
+
+	if (ImGui::SliderFloat("Movement speed", &m_movementSpeed, 0.5f, 100.0f, "%.3f", 2.0f)) {
+		m_camera.setSpeed(m_movementSpeed);
+	}
 
 	if (ImGui::SliderFloat("Plane width", &m_planeWidth, 1.0f, 1024.0f, "%.3f", 4.0f)) {
 		createPlane();
@@ -432,7 +437,7 @@ void A5::createPlane()
 	const std::size_t planeVertexCount = tilesVertexCount(m_planeTileCount);
 	vector<vec3> planeVertices(planeVertexCount);
 
-	std::size_t n = m_planeTileCount + 1;
+	const std::size_t n = m_planeTileCount + 1;
 	float tileWidth = m_planeWidth / static_cast<float>(m_planeTileCount);
 	for (std::size_t i = 0; i < planeVertexCount; ++i) {
 		std::size_t row = i / n;
@@ -444,7 +449,10 @@ void A5::createPlane()
 
 		float x = static_cast<float>(colDistanceTimes2) * tileWidth / 2.0f;
 		float z = static_cast<float>(rowDistanceTimes2) * tileWidth / 2.0f;
-		float y = m_heightScaleFactor * noise.GetNoise(row, col);
+
+		int noiseX = static_cast<int>(static_cast<float>(MaxTiles) * static_cast<float>(row) / static_cast<float>(n));
+		int noiseY = static_cast<int>(static_cast<float>(MaxTiles) * static_cast<float>(col) / static_cast<float>(n));
+		float y = m_heightScaleFactor * noise.GetNoise(noiseX, noiseY);
 
 		planeVertices[i] = vec3(x, y, z);
 	}

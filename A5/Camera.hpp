@@ -14,6 +14,8 @@ public:
 	void moveTo(glm::vec3 pos);
 	void rotate(glm::vec2 angleDelta);
 
+	void setSpeed(float speed);
+
 	enum class Direction {
 		FORWARD,
 		BACKWARD,
@@ -32,6 +34,8 @@ private:
 
 	glm::vec3 m_position;
 	glm::vec2 m_angle;
+
+	float m_speed;
 
 	bool& directionPressed(Direction);
 	bool m_directionPressed[static_cast<std::size_t>(Direction::NUM)];
