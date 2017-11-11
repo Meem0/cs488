@@ -56,6 +56,7 @@ protected:
 	bool m_paused;
 	bool m_fullScreen;
 	double m_deltaTime;
+	bool m_showGui;
 
 private:
 	static std::shared_ptr<Window> m_instance;

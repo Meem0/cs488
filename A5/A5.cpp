@@ -6,6 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <imgui/imgui.h>
+
 using namespace glm;
 using namespace std;
 
@@ -79,6 +81,17 @@ void A5::appLogic()
  */
 void A5::guiLogic()
 {
+	static bool debugWindow = true;
+
+	ImGuiWindowFlags windowFlags(ImGuiWindowFlags_AlwaysAutoResize);
+	float opacity(0.5f);
+
+	ImGui::Begin("Debug Window", &debugWindow, ImVec2(100, 100), opacity, windowFlags);
+	if (ImGui::Button("Quit Application")) {
+		glfwSetWindowShouldClose(m_window, GL_TRUE);
+	}
+	ImGui::Text("Framerate: %.1f FPS", ImGui::GetIO().Framerate);
+	ImGui::End();
 }
 
 //----------------------------------------------------------------------------------------
@@ -260,8 +273,7 @@ bool A5::keyInputEvent (
 
 		case GLFW_KEY_ESCAPE:
 			if (press) {
-				m_showMouse = !m_showMouse;
-				glfwSetInputMode(m_window, GLFW_CURSOR, m_showMouse ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+				setShowMouse(!m_showMouse);
 			}
 			break;
 		}
@@ -346,4 +358,12 @@ void A5::initGeom()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	CHECK_GL_ERRORS;
+}
+
+void A5::setShowMouse(bool showMouse)
+{
+	m_showMouse = showMouse;
+	glfwSetInputMode(m_window, GLFW_CURSOR, m_showMouse ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+
+	m_showGui = showMouse;
 }

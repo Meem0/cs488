@@ -7,8 +7,8 @@
 #include <cstdio>
 #include <chrono>
 
-/*#include <imgui/imgui.h>
-#include <imgui_impl_glfw_gl3.h>*/
+#include <imgui/imgui.h>
+#include <imgui_impl_glfw_gl3.h>
 
 using namespace std;
 
@@ -16,7 +16,7 @@ using namespace std;
 extern "C" {
 	int gl3wInit(void);
 }
-//static void renderImGui (int framebufferWidth, int framebufferHeight);
+static void renderImGui (int framebufferWidth, int framebufferHeight);
 
 //-- Static member initialization:
 string Window::m_exec_dir = ".";
@@ -39,6 +39,7 @@ Window::Window()
 	, m_paused(false)
 	, m_fullScreen(false)
 	, m_deltaTime(0.0)
+	, m_showGui(false)
 {
 }
 
@@ -314,8 +315,8 @@ static void renderImGui (
 		int framebufferHeight
 ) {
 	// Set viewport to full window size.
-	//glViewport(0, 0, framebufferWidth, framebufferHeight);
-	//ImGui::Render();
+	glViewport(0, 0, framebufferWidth, framebufferHeight);
+	ImGui::Render();
 }
 
 //----------------------------------------------------------------------------------------
@@ -380,7 +381,7 @@ void Window::run (
 
 	// Setup ImGui binding.  Tell the ImGui subsystem not to
 	// bother setting up its callbacks -- ours will do just fine here.
-	//ImGui_ImplGlfwGL3_Init( m_window, false );
+	ImGui_ImplGlfwGL3_Init( m_window, false );
 
     // Clear error buffer.
     while(glGetError() != GL_NO_ERROR);
@@ -399,7 +400,10 @@ void Window::run (
         // Main Program Loop:
         while (!glfwWindowShouldClose(m_window)) {
             glfwPollEvents();
-			//ImGui_ImplGlfwGL3_NewFrame();
+
+			if (m_showGui) {
+				ImGui_ImplGlfwGL3_NewFrame();
+			}
 
             if (!m_paused) {
 				frameStartTime = steady_clock::now();
@@ -407,7 +411,9 @@ void Window::run (
 				// Apply application-specific logic
 	            appLogic();
 
-	            guiLogic();
+				if (m_showGui) {
+					guiLogic();
+				}
 
 				// Ask the derived class to do the actual OpenGL drawing.
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -417,8 +423,10 @@ void Window::run (
 	            glfwGetFramebufferSize(m_window, &m_framebufferWidth,
 			            &m_framebufferHeight);
 
-	            // Draw any UI controls specified in guiLogic() by derived class.
-	            renderImGui(m_framebufferWidth, m_framebufferHeight);
+				if (m_showGui) {
+					// Draw any UI controls specified in guiLogic() by derived class.
+					renderImGui(m_framebufferWidth, m_framebufferHeight);
+				}
 
 				// Finally, blast everything to the screen.
                 glfwSwapBuffers(m_window);

@@ -37,6 +37,9 @@ private:
 
 	void initGeom();
 
+	void setShowMouse(bool showMouse);
+	bool m_showMouse;
+
 	// Fields related to the shader and uniforms.
 	ShaderProgram m_shader;
 	GLint m_uniformP; // Uniform location for Projection matrix.
@@ -53,5 +56,4 @@ private:
 	glm::mat4 m_projMat;
 
 	Camera m_camera;
-	bool m_showMouse;
 };
