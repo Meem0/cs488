@@ -156,11 +156,13 @@
     <ClCompile Include="..\shared\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\shared\imgui\imgui_impl_glfw_gl3.cpp" />
     <ClCompile Include="A5.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="lib\CS488WindowCustom.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="A5.hpp" />
+    <ClInclude Include="Camera.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

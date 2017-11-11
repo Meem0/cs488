@@ -8,6 +8,8 @@
 
 #include <glm/glm.hpp>
 
+#include "Camera.hpp"
+
 class A5 : public CS488Window {
 public:
 	A5();
@@ -33,17 +35,6 @@ private:
 	bool m_mouseButtonPressed[NumMouseButtons];
 	glm::vec2 m_mousePos;
 
-	enum class Direction {
-		FORWARD,
-		BACKWARD,
-		LEFT,
-		RIGHT,
-		NUM
-	};
-	bool m_directionPressed[static_cast<std::size_t>(Direction::NUM)];
-
-	bool& directionPressed(Direction);
-
 	void initGeom();
 
 	// Fields related to the shader and uniforms.
@@ -60,10 +51,6 @@ private:
 	GLuint m_vboBox; // Vertex Buffer Object
 
 	glm::mat4 m_projMat;
-	glm::mat4 m_viewMat;
 
-	glm::vec3 m_cameraPos;
-	glm::vec2 m_cameraAngle;
-
-	bool m_updateViewMat;
+	Camera m_camera;
 };

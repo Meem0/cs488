@@ -4,10 +4,7 @@
 #include "cs488-framework/MathUtils.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include <algorithm>
 
 using namespace glm;
 using namespace std;
@@ -17,8 +14,6 @@ using namespace std;
 A5::A5()
 	: m_mouseButtonPressed{ false, false, false }
 	, m_mousePos(0, 0)
-	, m_directionPressed{ false, false, false, false }
-	, m_updateViewMat(true)
 {
 }
 
@@ -60,7 +55,7 @@ void A5::init()
 
 	// Set up initial view and projection matrices (need to do this here,
 	// since it depends on the GLFW window being set up correctly).
-	m_cameraPos = vec3(0, 2.0f, 4.0f);
+	m_camera.moveTo(vec3(0, 2.0f, 4.0f));
 
 	m_projMat = perspective(
 		radians(45.0f),
@@ -74,36 +69,7 @@ void A5::init()
  */
 void A5::appLogic()
 {
-	int x = 0;
-	int z = 0;
-	if (directionPressed(Direction::FORWARD) && !directionPressed(Direction::BACKWARD)) {
-		z = -1;
-	}
-	else if (directionPressed(Direction::BACKWARD) && !directionPressed(Direction::FORWARD)) {
-		z = 1;
-	}
-	if (directionPressed(Direction::LEFT) && !directionPressed(Direction::RIGHT)) {
-		x = -1;
-	}
-	else if (directionPressed(Direction::RIGHT) && !directionPressed(Direction::LEFT)) {
-		x = 1;
-	}
-
-	if (x != 0 || z != 0) {
-		const static float Speed = 4.0f / 60.0f;
-		float fx = static_cast<float>(x);
-		float fz = static_cast<float>(z);
-		vec3 moveVec = Speed * normalize(vec3(fx, 0.0f, fz));
-
-		quat lookDir = glm::angleAxis(-m_cameraAngle.x, vec3(0, 1.0f, 0));
-		lookDir = glm::rotate(lookDir, -m_cameraAngle.y, vec3(1.0f, 0, 0));
-
-		moveVec = glm::rotate(lookDir, moveVec);
-
-		m_cameraPos += moveVec;
-
-		m_updateViewMat = true;
-	}
+	m_camera.update();
 }
 
 //----------------------------------------------------------------------------------------
@@ -120,27 +86,16 @@ void A5::guiLogic()
  */
 void A5::draw()
 {
-	if (m_updateViewMat) {
-		m_updateViewMat = false;
-
-		mat4 trans = glm::translate(mat4(), vec3() - m_cameraPos);
-
-		quat lookDir = glm::angleAxis(m_cameraAngle.y, vec3(1.0f, 0, 0));
-		lookDir = glm::rotate(lookDir, m_cameraAngle.x, vec3(0, 1.0f, 0));
-
-		mat4 rot = glm::toMat4(lookDir);
-
-		m_viewMat = rot * trans;
-	}
-
 	// Create a global transformation for the model (centre it).
 	mat4 M;
+
+	mat4 V = m_camera.getViewMatrix();
 
 	m_shader.enable();
 	glEnable(GL_DEPTH_TEST);
 
 	glUniformMatrix4fv(m_uniformP, 1, GL_FALSE, value_ptr(m_projMat));
-	glUniformMatrix4fv(m_uniformV, 1, GL_FALSE, value_ptr(m_viewMat));
+	glUniformMatrix4fv(m_uniformV, 1, GL_FALSE, value_ptr(V));
 	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
 
 	// draw the plane
@@ -209,14 +164,7 @@ bool A5::mouseMoveEvent (
 		sensitivity.y * (mousePos.y - m_mousePos.y)
 	);
 
-	m_cameraAngle += angleDelta;
-
-	float maxY = degreesToRadians(90.0f);
-	float minY = degreesToRadians(-90.0f);
-	m_cameraAngle.y = std::min(m_cameraAngle.y, maxY);
-	m_cameraAngle.y = std::max(m_cameraAngle.y, minY);
-
-	m_updateViewMat = true;
+	m_camera.rotate(angleDelta);
 
 	m_mousePos = mousePos;
 
@@ -295,26 +243,21 @@ bool A5::keyInputEvent (
 		bool press = action == GLFW_PRESS;
 		switch (key) {
 		case GLFW_KEY_W:
-			directionPressed(Direction::FORWARD) = press;
+			m_camera.setDirectionPressed(Camera::Direction::FORWARD, press);
 			break;
 		case GLFW_KEY_A:
-			directionPressed(Direction::LEFT) = press;
+			m_camera.setDirectionPressed(Camera::Direction::LEFT, press);
 			break;
 		case GLFW_KEY_S:
-			directionPressed(Direction::BACKWARD) = press;
+			m_camera.setDirectionPressed(Camera::Direction::BACKWARD, press);
 			break;
 		case GLFW_KEY_D:
-			directionPressed(Direction::RIGHT) = press;
+			m_camera.setDirectionPressed(Camera::Direction::RIGHT, press);
 			break;
 		}
 	}
 
 	return eventHandled;
-}
-
-bool& A5::directionPressed(Direction dir)
-{
-	return m_directionPressed[static_cast<std::size_t>(dir)];
 }
 
 void A5::initGeom()
