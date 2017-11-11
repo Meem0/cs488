@@ -36,9 +36,17 @@ private:
 	glm::vec2 m_mousePos;
 
 	void initGeom();
+	void createPlane();
 
 	void setShowMouse(bool showMouse);
 	bool m_showMouse;
+
+	bool m_wireframeMode;
+
+	float m_planeWidth;
+	std::size_t m_planeTileCount;
+	std::size_t getPlaneVertexCount() const;
+	std::size_t getPlaneIndexCount() const;
 
 	// Fields related to the shader and uniforms.
 	ShaderProgram m_shader;
@@ -49,6 +57,7 @@ private:
 
 	GLuint m_vaoPlane; // Vertex Array Object
 	GLuint m_vboPlane; // Vertex Buffer Object
+	GLuint m_eboPlane; // Element Buffer Object
 
 	GLuint m_vaoBox; // Vertex Array Object
 	GLuint m_vboBox; // Vertex Buffer Object

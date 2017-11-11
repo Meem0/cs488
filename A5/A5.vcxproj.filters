@@ -28,6 +28,9 @@
     <Filter Include="shared\imgui">
       <UniqueIdentifier>{a8273385-e90c-4c38-926f-c8693105d761}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{28a6fb6f-7516-44fe-8c98-73ba7e3200e6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\cs488-framework\GlErrorCheck.cpp">
@@ -80,5 +83,13 @@
     <ClInclude Include="Window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\FragmentShader.fs">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\VertexShader.vs">
+      <Filter>Assets</Filter>
+    </None>
   </ItemGroup>
 </Project>

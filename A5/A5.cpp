@@ -8,6 +8,8 @@
 
 #include <imgui/imgui.h>
 
+#include <vector>
+
 using namespace glm;
 using namespace std;
 
@@ -17,6 +19,9 @@ A5::A5()
 	: m_mouseButtonPressed{ false, false, false }
 	, m_mousePos(0, 0)
 	, m_showMouse(false)
+	, m_planeTileCount(256)
+	, m_planeWidth(128.0f)
+	, m_wireframeMode(false)
 {
 }
 
@@ -112,10 +117,17 @@ void A5::draw()
 	glUniformMatrix4fv(m_uniformV, 1, GL_FALSE, value_ptr(V));
 	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
 
+	if (m_wireframeMode) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}
+	else {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+
 	// draw the plane
 	glBindVertexArray(m_vaoPlane);
 	glUniform3f(m_uniformColour, 0.5f, 0.7f, 0.5f);
-	glDrawArrays(GL_TRIANGLES, 0, 2 * 3);
+	glDrawElements(GL_TRIANGLES, getPlaneIndexCount(), GL_UNSIGNED_INT, nullptr);
 
 	// draw the box
 	glBindVertexArray(m_vaoBox);
@@ -276,6 +288,12 @@ bool A5::keyInputEvent (
 				setShowMouse(!m_showMouse);
 			}
 			break;
+
+		case GLFW_KEY_F:
+			if (press) {
+				m_wireframeMode = !m_wireframeMode;
+			}
+			break;
 		}
 	}
 
@@ -284,28 +302,7 @@ bool A5::keyInputEvent (
 
 void A5::initGeom()
 {
-	const std::size_t planeNumVerts = 6;
-	vec3 planeVerts[planeNumVerts];
-	planeVerts[0] = vec3(-1.0f, 0, -1.0f);
-	planeVerts[1] = vec3(-1.0f, 0, 1.0f);
-	planeVerts[2] = vec3(1.0f, 0, 1.0f);
-	planeVerts[3] = vec3(-1.0f, 0, -1.0f);
-	planeVerts[4] = vec3(1.0f, 0, 1.0f);
-	planeVerts[5] = vec3(1.0f, 0, -1.0f);
-
-	// Create the vertex array to record buffer assignments.
-	glGenVertexArrays(1, &m_vaoPlane);
-	glBindVertexArray(m_vaoPlane);
-
-	// Create the plane vertex buffer
-	glGenBuffers(1, &m_vboPlane);
-	glBindBuffer(GL_ARRAY_BUFFER, m_vboPlane);
-	glBufferData(GL_ARRAY_BUFFER, planeNumVerts * sizeof(vec3), planeVerts, GL_STATIC_DRAW);
-
-	// Specify the means of extracting the position values properly.
-	GLint posAttrib = m_shader.getAttribLocation("position");
-	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	createPlane();
 
 	const vec3 boxVerts[8] = {
 		vec3(-0.8f, 0.3f, -0.8f), // 0 left-bottom-back
@@ -349,6 +346,7 @@ void A5::initGeom()
 	glBufferData(GL_ARRAY_BUFFER, boxNumVerts * sizeof(vec3), box, GL_STATIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
+	GLint posAttrib = m_shader.getAttribLocation("position");
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
@@ -360,10 +358,87 @@ void A5::initGeom()
 	CHECK_GL_ERRORS;
 }
 
+void A5::createPlane()
+{
+	const std::size_t planeVertexCount = getPlaneVertexCount();
+	vector<vec3> planeVerts(planeVertexCount);
+
+	std::size_t n = m_planeTileCount + 1;
+	float tileWidth = m_planeWidth / static_cast<float>(m_planeTileCount);
+	for (std::size_t i = 0; i < planeVertexCount; ++i) {
+		std::size_t row = i / n;
+		std::size_t col = i % n;
+
+		int centreIndexTimes2 = (n - 1);
+		int colDistanceTimes2 = col * 2 - centreIndexTimes2;
+		int rowDistanceTimes2 = row * 2 - centreIndexTimes2;
+
+		float x = static_cast<float>(colDistanceTimes2) * tileWidth / 2.0f;
+		float y = static_cast<float>(rowDistanceTimes2) * tileWidth / 2.0f;
+
+		planeVerts[i] = vec3(x, 0, y);
+	}
+
+	const std::size_t planeIndexCount = getPlaneIndexCount();
+	vector<std::size_t> planeIndices(planeIndexCount);
+	for (std::size_t tileIdx = 0; tileIdx < m_planeTileCount * m_planeTileCount; ++tileIdx) {
+		std::size_t row = tileIdx / m_planeTileCount;
+		std::size_t col = tileIdx % m_planeTileCount;
+
+		std::size_t a, b, c, d;
+		a = row * n + col;
+		b = a + 1;
+		c = b + n - 1;
+		d = c + 1;
+
+		std::size_t idx = tileIdx * 6;
+		planeIndices[idx++] = a;
+		planeIndices[idx++] = c;
+		planeIndices[idx++] = b;
+		planeIndices[idx++] = b;
+		planeIndices[idx++] = c;
+		planeIndices[idx++] = d;
+	}
+
+	// Create the vertex array to record buffer assignments.
+	glGenVertexArrays(1, &m_vaoPlane);
+	glBindVertexArray(m_vaoPlane);
+
+	// Create the plane vertex buffer
+	glGenBuffers(1, &m_vboPlane);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboPlane);
+	glBufferData(GL_ARRAY_BUFFER, planeVertexCount * sizeof(vec3), planeVerts.data(), GL_STATIC_DRAW);
+
+	// Create the plane element buffer
+	glGenBuffers(1, &m_eboPlane);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboPlane);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, planeIndexCount * sizeof(std::size_t), planeIndices.data(), GL_STATIC_DRAW);
+
+	// Specify the means of extracting the position values properly.
+	GLint posAttrib = m_shader.getAttribLocation("position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Reset state
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
 void A5::setShowMouse(bool showMouse)
 {
 	m_showMouse = showMouse;
 	glfwSetInputMode(m_window, GLFW_CURSOR, m_showMouse ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 
 	m_showGui = showMouse;
+}
+
+std::size_t A5::getPlaneVertexCount() const
+{
+	return (m_planeTileCount + 1) * (m_planeTileCount + 1);
+}
+
+std::size_t A5::getPlaneIndexCount() const
+{
+	return m_planeTileCount * m_planeTileCount * 2 * 3;
 }
