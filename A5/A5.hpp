@@ -36,6 +36,7 @@ private:
 	glm::vec2 m_mousePos;
 
 	void initGeom();
+	void allocatePlane();
 	void createPlane();
 
 	void setShowMouse(bool showMouse);
@@ -45,8 +46,7 @@ private:
 
 	float m_planeWidth;
 	std::size_t m_planeTileCount;
-	std::size_t getPlaneVertexCount() const;
-	std::size_t getPlaneIndexCount() const;
+	const static std::size_t MaxTiles = 1024;
 
 	// Fields related to the shader and uniforms.
 	ShaderProgram m_shader;

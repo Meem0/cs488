@@ -8,10 +8,23 @@
 
 #include <imgui/imgui.h>
 
+#include <cassert>
 #include <vector>
 
 using namespace glm;
 using namespace std;
+
+namespace {
+	std::size_t tilesVertexCount(std::size_t tileCount)
+	{
+		return (tileCount + 1) * (tileCount + 1);
+	}
+
+	std::size_t tilesIndexCount(std::size_t tileCount)
+	{
+		return tileCount * tileCount * 2 * 3;
+	}
+}
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -55,6 +68,7 @@ void A5::init()
 	m_uniformColour = m_shader.getUniformLocation("colour");
 
 	initGeom();
+	createPlane();
 
 	double cursorX, cursorY;
 	glfwGetCursorPos(m_window, &cursorX, &cursorY);
@@ -127,7 +141,7 @@ void A5::draw()
 	// draw the plane
 	glBindVertexArray(m_vaoPlane);
 	glUniform3f(m_uniformColour, 0.5f, 0.7f, 0.5f);
-	glDrawElements(GL_TRIANGLES, getPlaneIndexCount(), GL_UNSIGNED_INT, nullptr);
+	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_planeTileCount), GL_UNSIGNED_INT, nullptr);
 
 	// draw the box
 	glBindVertexArray(m_vaoBox);
@@ -302,7 +316,7 @@ bool A5::keyInputEvent (
 
 void A5::initGeom()
 {
-	createPlane();
+	allocatePlane();
 
 	const vec3 boxVerts[8] = {
 		vec3(-0.8f, 0.3f, -0.8f), // 0 left-bottom-back
@@ -358,10 +372,42 @@ void A5::initGeom()
 	CHECK_GL_ERRORS;
 }
 
+void A5::allocatePlane()
+{
+	std::size_t maxVertexCount = tilesVertexCount(MaxTiles);
+	std::size_t maxIndexCount = tilesIndexCount(MaxTiles);
+
+	// Create the vertex array to record buffer assignments.
+	glGenVertexArrays(1, &m_vaoPlane);
+	glBindVertexArray(m_vaoPlane);
+
+	// Create the plane vertex buffer
+	glGenBuffers(1, &m_vboPlane);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboPlane);
+	glBufferData(GL_ARRAY_BUFFER, maxVertexCount * sizeof(vec3), nullptr, GL_STATIC_DRAW);
+
+	// Create the plane element buffer
+	glGenBuffers(1, &m_eboPlane);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboPlane);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, maxIndexCount * sizeof(std::size_t), nullptr, GL_STATIC_DRAW);
+
+	// Specify the means of extracting the position values properly.
+	GLint posAttrib = m_shader.getAttribLocation("position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Reset state
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
 void A5::createPlane()
 {
-	const std::size_t planeVertexCount = getPlaneVertexCount();
-	vector<vec3> planeVerts(planeVertexCount);
+	assert(m_planeTileCount <= MaxTiles);
+
+	const std::size_t planeVertexCount = tilesVertexCount(m_planeTileCount);
+	vector<vec3> planeVertices(planeVertexCount);
 
 	std::size_t n = m_planeTileCount + 1;
 	float tileWidth = m_planeWidth / static_cast<float>(m_planeTileCount);
@@ -376,10 +422,10 @@ void A5::createPlane()
 		float x = static_cast<float>(colDistanceTimes2) * tileWidth / 2.0f;
 		float y = static_cast<float>(rowDistanceTimes2) * tileWidth / 2.0f;
 
-		planeVerts[i] = vec3(x, 0, y);
+		planeVertices[i] = vec3(x, 0, y);
 	}
 
-	const std::size_t planeIndexCount = getPlaneIndexCount();
+	const std::size_t planeIndexCount = tilesIndexCount(m_planeTileCount);
 	vector<std::size_t> planeIndices(planeIndexCount);
 	for (std::size_t tileIdx = 0; tileIdx < m_planeTileCount * m_planeTileCount; ++tileIdx) {
 		std::size_t row = tileIdx / m_planeTileCount;
@@ -400,28 +446,12 @@ void A5::createPlane()
 		planeIndices[idx++] = d;
 	}
 
-	// Create the vertex array to record buffer assignments.
-	glGenVertexArrays(1, &m_vaoPlane);
-	glBindVertexArray(m_vaoPlane);
-
-	// Create the plane vertex buffer
-	glGenBuffers(1, &m_vboPlane);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboPlane);
-	glBufferData(GL_ARRAY_BUFFER, planeVertexCount * sizeof(vec3), planeVerts.data(), GL_STATIC_DRAW);
-
-	// Create the plane element buffer
-	glGenBuffers(1, &m_eboPlane);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboPlane);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, planeIndexCount * sizeof(std::size_t), planeIndices.data(), GL_STATIC_DRAW);
-
-	// Specify the means of extracting the position values properly.
-	GLint posAttrib = m_shader.getAttribLocation("position");
-	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-	// Reset state
-	glBindVertexArray(0);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, planeVertexCount * sizeof(vec3), planeVertices.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboPlane);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, planeIndexCount * sizeof(std::size_t), planeIndices.data());
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
@@ -431,14 +461,4 @@ void A5::setShowMouse(bool showMouse)
 	glfwSetInputMode(m_window, GLFW_CURSOR, m_showMouse ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 
 	m_showGui = showMouse;
-}
-
-std::size_t A5::getPlaneVertexCount() const
-{
-	return (m_planeTileCount + 1) * (m_planeTileCount + 1);
-}
-
-std::size_t A5::getPlaneIndexCount() const
-{
-	return m_planeTileCount * m_planeTileCount * 2 * 3;
 }
