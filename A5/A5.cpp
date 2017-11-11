@@ -14,6 +14,7 @@ using namespace std;
 A5::A5()
 	: m_mouseButtonPressed{ false, false, false }
 	, m_mousePos(0, 0)
+	, m_showMouse(false)
 {
 }
 
@@ -154,17 +155,19 @@ bool A5::mouseMoveEvent (
 		static_cast<float>(yPos)
 	);
 
-	vec2 sensitivity(
-		degreesToRadians(90.0f) / m_windowWidth,
-		degreesToRadians(90.0f) / m_windowHeight
-	);
+	if (!m_showMouse) {
+		vec2 sensitivity(
+			degreesToRadians(90.0f) / m_windowWidth,
+			degreesToRadians(90.0f) / m_windowHeight
+		);
 
-	vec2 angleDelta(
-		sensitivity.x * (mousePos.x - m_mousePos.x),
-		sensitivity.y * (mousePos.y - m_mousePos.y)
-	);
+		vec2 angleDelta(
+			sensitivity.x * (mousePos.x - m_mousePos.x),
+			sensitivity.y * (mousePos.y - m_mousePos.y)
+		);
 
-	m_camera.rotate(angleDelta);
+		m_camera.rotate(angleDelta);
+	}
 
 	m_mousePos = mousePos;
 
@@ -253,6 +256,13 @@ bool A5::keyInputEvent (
 			break;
 		case GLFW_KEY_D:
 			m_camera.setDirectionPressed(Camera::Direction::RIGHT, press);
+			break;
+
+		case GLFW_KEY_ESCAPE:
+			if (press) {
+				m_showMouse = !m_showMouse;
+				glfwSetInputMode(m_window, GLFW_CURSOR, m_showMouse ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+			}
 			break;
 		}
 	}

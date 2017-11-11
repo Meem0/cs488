@@ -53,4 +53,5 @@ private:
 	glm::mat4 m_projMat;
 
 	Camera m_camera;
+	bool m_showMouse;
 };
