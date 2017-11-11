@@ -49,6 +49,8 @@ private:
 	std::size_t m_planeTileCount;
 	const static std::size_t MaxTiles = 1024;
 
+	float m_heightScaleFactor;
+
 	// Fields related to the shader and uniforms.
 	ShaderProgram m_shader;
 	GLint m_uniformP; // Uniform location for Projection matrix.

@@ -3,6 +3,8 @@
 #include "cs488-framework/GlErrorCheck.hpp"
 #include "cs488-framework/MathUtils.hpp"
 
+#include "FastNoise.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -35,6 +37,7 @@ A5::A5()
 	, m_planeTileCount(256)
 	, m_planeWidth(128.0f)
 	, m_wireframeMode(false)
+	, m_heightScaleFactor(1.0f)
 {
 	m_planeTileCountSlider = static_cast<float>(m_planeTileCount);
 }
@@ -121,6 +124,10 @@ void A5::guiLogic()
 		createPlane();
 	}
 
+	if (ImGui::SliderFloat("Height scale", &m_heightScaleFactor, 0.1f, 10.0f, "%.3f", 1.5f)) {
+		createPlane();
+	}
+
 	ImGui::End();
 }
 
@@ -155,9 +162,9 @@ void A5::draw()
 	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_planeTileCount), GL_UNSIGNED_INT, nullptr);
 
 	// draw the box
-	glBindVertexArray(m_vaoBox);
+	/*glBindVertexArray(m_vaoBox);
 	glUniform3f(m_uniformColour, 0.65f, 0.5f, 0.5f);
-	glDrawArrays(GL_TRIANGLES, 0, 6 * 2 * 3);
+	glDrawArrays(GL_TRIANGLES, 0, 6 * 2 * 3);*/
 
 	m_shader.disable();
 
@@ -418,6 +425,10 @@ void A5::createPlane()
 {
 	assert(m_planeTileCount <= MaxTiles);
 
+	FastNoise noise;
+	noise.SetSeed(20171111);
+	noise.SetNoiseType(FastNoise::SimplexFractal);
+
 	const std::size_t planeVertexCount = tilesVertexCount(m_planeTileCount);
 	vector<vec3> planeVertices(planeVertexCount);
 
@@ -432,9 +443,10 @@ void A5::createPlane()
 		int rowDistanceTimes2 = row * 2 - centreIndexTimes2;
 
 		float x = static_cast<float>(colDistanceTimes2) * tileWidth / 2.0f;
-		float y = static_cast<float>(rowDistanceTimes2) * tileWidth / 2.0f;
+		float z = static_cast<float>(rowDistanceTimes2) * tileWidth / 2.0f;
+		float y = m_heightScaleFactor * noise.GetNoise(row, col);
 
-		planeVertices[i] = vec3(x, 0, y);
+		planeVertices[i] = vec3(x, y, z);
 	}
 
 	const std::size_t planeIndexCount = tilesIndexCount(m_planeTileCount);
