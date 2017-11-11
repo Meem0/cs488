@@ -9,7 +9,7 @@ public:
 
 	const glm::mat4& getViewMatrix();
 
-	void update();
+	void update(double deltaTime);
 
 	void moveTo(glm::vec3 pos);
 	void rotate(glm::vec2 angleDelta);

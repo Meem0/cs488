@@ -63,10 +63,10 @@
     <ClCompile Include="..\shared\imgui\imgui_impl_glfw_gl3.cpp">
       <Filter>shared\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="lib\CS488WindowCustom.cpp">
-      <Filter>shared\cs488-framework</Filter>
-    </ClCompile>
     <ClCompile Include="Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -75,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Camera.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

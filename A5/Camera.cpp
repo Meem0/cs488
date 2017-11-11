@@ -23,7 +23,7 @@ const mat4& Camera::getViewMatrix()
 	return m_viewMatrix;
 }
 
-void Camera::update()
+void Camera::update(double deltaTime)
 {
 	int x = 0;
 	int z = 0;
@@ -44,7 +44,7 @@ void Camera::update()
 		quat lookDir = glm::angleAxis(-m_angle.x, vec3(0, 1.0f, 0));
 		lookDir = glm::rotate(lookDir, -m_angle.y, vec3(1.0f, 0, 0));
 
-		const static float Speed = 4.0f / 60.0f;
+		const static float Speed = static_cast<float>(4.0 * deltaTime);
 		float fx = static_cast<float>(x);
 		float fz = static_cast<float>(z);
 		vec3 moveVec = Speed * normalize(vec3(fx, 0.0f, fz));

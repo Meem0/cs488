@@ -2,7 +2,7 @@
 
 #define _USE_MATH_DEFINES
 
-#include "cs488-framework/CS488Window.hpp"
+#include "Window.hpp"
 #include "cs488-framework/OpenGLImport.hpp"
 #include "cs488-framework/ShaderProgram.hpp"
 
@@ -10,7 +10,7 @@
 
 #include "Camera.hpp"
 
-class A5 : public CS488Window {
+class A5 : public Window {
 public:
 	A5();
 	virtual ~A5();

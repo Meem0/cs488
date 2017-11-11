@@ -69,7 +69,7 @@ void A5::init()
  */
 void A5::appLogic()
 {
-	m_camera.update();
+	m_camera.update(m_deltaTime);
 }
 
 //----------------------------------------------------------------------------------------
