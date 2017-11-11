@@ -33,6 +33,17 @@ private:
 	bool m_mouseButtonPressed[NumMouseButtons];
 	glm::vec2 m_mousePos;
 
+	enum class Direction {
+		FORWARD,
+		BACKWARD,
+		LEFT,
+		RIGHT,
+		NUM
+	};
+	bool m_directionPressed[static_cast<std::size_t>(Direction::NUM)];
+
+	bool& directionPressed(Direction);
+
 	void initGeom();
 
 	// Fields related to the shader and uniforms.

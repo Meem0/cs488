@@ -17,6 +17,7 @@ using namespace std;
 A5::A5()
 	: m_mouseButtonPressed{ false, false, false }
 	, m_mousePos(0, 0)
+	, m_directionPressed{ false, false, false, false }
 	, m_updateViewMat(true)
 {
 }
@@ -59,12 +60,12 @@ void A5::init()
 
 	// Set up initial view and projection matrices (need to do this here,
 	// since it depends on the GLFW window being set up correctly).
-	m_cameraPos = vec3(0, 2.0f, 1.0f);
+	m_cameraPos = vec3(0, 2.0f, 4.0f);
 
 	m_projMat = perspective(
 		radians(45.0f),
 		float(m_framebufferWidth) / float(m_framebufferHeight),
-		1.0f, 1000.0f);
+		0.1f, 1000.0f);
 }
 
 //----------------------------------------------------------------------------------------
@@ -73,6 +74,36 @@ void A5::init()
  */
 void A5::appLogic()
 {
+	int x = 0;
+	int z = 0;
+	if (directionPressed(Direction::FORWARD) && !directionPressed(Direction::BACKWARD)) {
+		z = -1;
+	}
+	else if (directionPressed(Direction::BACKWARD) && !directionPressed(Direction::FORWARD)) {
+		z = 1;
+	}
+	if (directionPressed(Direction::LEFT) && !directionPressed(Direction::RIGHT)) {
+		x = -1;
+	}
+	else if (directionPressed(Direction::RIGHT) && !directionPressed(Direction::LEFT)) {
+		x = 1;
+	}
+
+	if (x != 0 || z != 0) {
+		const static float Speed = 4.0f / 60.0f;
+		float fx = static_cast<float>(x);
+		float fz = static_cast<float>(z);
+		vec3 moveVec = Speed * normalize(vec3(fx, 0.0f, fz));
+
+		quat lookDir = glm::angleAxis(-m_cameraAngle.x, vec3(0, 1.0f, 0));
+		lookDir = glm::rotate(lookDir, -m_cameraAngle.y, vec3(1.0f, 0, 0));
+
+		moveVec = glm::rotate(lookDir, moveVec);
+
+		m_cameraPos += moveVec;
+
+		m_updateViewMat = true;
+	}
 }
 
 //----------------------------------------------------------------------------------------
@@ -260,7 +291,30 @@ bool A5::keyInputEvent (
 ) {
 	bool eventHandled(false);
 
+	if (action == GLFW_PRESS || action == GLFW_RELEASE) {
+		bool press = action == GLFW_PRESS;
+		switch (key) {
+		case GLFW_KEY_W:
+			directionPressed(Direction::FORWARD) = press;
+			break;
+		case GLFW_KEY_A:
+			directionPressed(Direction::LEFT) = press;
+			break;
+		case GLFW_KEY_S:
+			directionPressed(Direction::BACKWARD) = press;
+			break;
+		case GLFW_KEY_D:
+			directionPressed(Direction::RIGHT) = press;
+			break;
+		}
+	}
+
 	return eventHandled;
+}
+
+bool& A5::directionPressed(Direction dir)
+{
+	return m_directionPressed[static_cast<std::size_t>(dir)];
 }
 
 void A5::initGeom()
