@@ -4,7 +4,10 @@
 #include "cs488-framework/MathUtils.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include <algorithm>
 
 using namespace glm;
 using namespace std;
@@ -12,8 +15,9 @@ using namespace std;
 //----------------------------------------------------------------------------------------
 // Constructor
 A5::A5()
-	: m_mouseButtonPressed{false, false, false}
+	: m_mouseButtonPressed{ false, false, false }
 	, m_mousePos(0, 0)
+	, m_updateViewMat(true)
 {
 }
 
@@ -55,13 +59,7 @@ void A5::init()
 
 	// Set up initial view and projection matrices (need to do this here,
 	// since it depends on the GLFW window being set up correctly).
-	m_cameraPos = vec3(0, 1.0f, 4.0f);
-	m_cameraAngle = vec2(degreesToRadians(90.0f), 0);
-
-	/*m_viewMat = glm::lookAt(
-		m_cameraPos,
-		m_cameraPos + vec3(0.0f, 0.0f, -1.0f),
-		vec3(0.0f, 1.0f, 0.0f));*/
+	m_cameraPos = vec3(0, 2.0f, 1.0f);
 
 	m_projMat = perspective(
 		radians(45.0f),
@@ -91,6 +89,19 @@ void A5::guiLogic()
  */
 void A5::draw()
 {
+	if (m_updateViewMat) {
+		m_updateViewMat = false;
+
+		mat4 trans = glm::translate(mat4(), vec3() - m_cameraPos);
+
+		quat lookDir = glm::angleAxis(m_cameraAngle.y, vec3(1.0f, 0, 0));
+		lookDir = glm::rotate(lookDir, m_cameraAngle.x, vec3(0, 1.0f, 0));
+
+		mat4 rot = glm::toMat4(lookDir);
+
+		m_viewMat = rot * trans;
+	}
+
 	// Create a global transformation for the model (centre it).
 	mat4 M;
 
@@ -157,21 +168,24 @@ bool A5::mouseMoveEvent (
 		static_cast<float>(yPos)
 	);
 
-	float sensitivityX = degreesToRadians(-90.0f) / m_windowWidth;
-	float sensitivityY = degreesToRadians(-90.0f) / m_windowHeight;
+	vec2 sensitivity(
+		degreesToRadians(90.0f) / m_windowWidth,
+		degreesToRadians(90.0f) / m_windowHeight
+	);
 
 	vec2 angleDelta(
-		sensitivityX * (mousePos.x - m_mousePos.x),
-		sensitivityY * (mousePos.y - m_mousePos.y)
+		sensitivity.x * (mousePos.x - m_mousePos.x),
+		sensitivity.y * (mousePos.y - m_mousePos.y)
 	);
 
 	m_cameraAngle += angleDelta;
 
-	mat4 trans = glm::translate(mat4(), vec3() - m_cameraPos);
-	mat4 rot = glm::rotate(mat4(), m_cameraAngle.x, vec3(0, 1.0f, 0));
-	rot = glm::rotate(rot, m_cameraAngle.y, vec3(1.0f, 0, 0));
+	float maxY = degreesToRadians(90.0f);
+	float minY = degreesToRadians(-90.0f);
+	m_cameraAngle.y = std::min(m_cameraAngle.y, maxY);
+	m_cameraAngle.y = std::max(m_cameraAngle.y, minY);
 
-	m_viewMat = rot * trans;
+	m_updateViewMat = true;
 
 	m_mousePos = mousePos;
 

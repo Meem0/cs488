@@ -53,4 +53,6 @@ private:
 
 	glm::vec3 m_cameraPos;
 	glm::vec2 m_cameraAngle;
+
+	bool m_updateViewMat;
 };
