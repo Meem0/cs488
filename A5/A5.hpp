@@ -45,6 +45,7 @@ private:
 	bool m_wireframeMode;
 
 	float m_planeWidth;
+	float m_planeTileCountSlider;
 	std::size_t m_planeTileCount;
 	const static std::size_t MaxTiles = 1024;
 

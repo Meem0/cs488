@@ -36,6 +36,7 @@ A5::A5()
 	, m_planeWidth(128.0f)
 	, m_wireframeMode(false)
 {
+	m_planeTileCountSlider = static_cast<float>(m_planeTileCount);
 }
 
 //----------------------------------------------------------------------------------------
@@ -110,6 +111,16 @@ void A5::guiLogic()
 		glfwSetWindowShouldClose(m_window, GL_TRUE);
 	}
 	ImGui::Text("Framerate: %.1f FPS", ImGui::GetIO().Framerate);
+
+	if (ImGui::SliderFloat("Plane width", &m_planeWidth, 1.0f, 1024.0f, "%.3f", 4.0f)) {
+		createPlane();
+	}
+	if (ImGui::SliderFloat("Tile count", &m_planeTileCountSlider, 1.0f, 1024.0f, "%.0f", 2.0f)) {
+		m_planeTileCountSlider = std::floor(m_planeTileCountSlider);
+		m_planeTileCount = static_cast<std::size_t>(m_planeTileCountSlider);
+		createPlane();
+	}
+
 	ImGui::End();
 }
 
@@ -152,6 +163,7 @@ void A5::draw()
 
 	// Restore defaults
 	glBindVertexArray(0);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	CHECK_GL_ERRORS;
 }
