@@ -45,6 +45,9 @@ private:
 	GLuint m_vaoPlane; // Vertex Array Object
 	GLuint m_vboPlane; // Vertex Buffer Object
 
+	GLuint m_vaoBox; // Vertex Array Object
+	GLuint m_vboBox; // Vertex Buffer Object
+
 	glm::mat4 m_projMat;
 	glm::mat4 m_viewMat;
 

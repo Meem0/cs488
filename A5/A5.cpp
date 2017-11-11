@@ -101,10 +101,15 @@ void A5::draw()
 	glUniformMatrix4fv(m_uniformV, 1, GL_FALSE, value_ptr(m_viewMat));
 	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
 
-	// Just draw the grid for now.
+	// draw the plane
 	glBindVertexArray(m_vaoPlane);
 	glUniform3f(m_uniformColour, 0.5f, 0.7f, 0.5f);
 	glDrawArrays(GL_TRIANGLES, 0, 2 * 3);
+
+	// draw the box
+	glBindVertexArray(m_vaoBox);
+	glUniform3f(m_uniformColour, 0.65f, 0.5f, 0.5f);
+	glDrawArrays(GL_TRIANGLES, 0, 6 * 2 * 3);
 
 	m_shader.disable();
 
@@ -246,14 +251,14 @@ bool A5::keyInputEvent (
 
 void A5::initGeom()
 {
-	const std::size_t numVerts = 6;
-	vec3 verts[numVerts];
-	verts[0] = vec3(-1.0f, 0, -1.0f);
-	verts[1] = vec3(-1.0f, 0, 1.0f);
-	verts[2] = vec3(1.0f, 0, 1.0f);
-	verts[3] = vec3(-1.0f, 0, -1.0f);
-	verts[4] = vec3(1.0f, 0, 1.0f);
-	verts[5] = vec3(1.0f, 0, -1.0f);
+	const std::size_t planeNumVerts = 6;
+	vec3 planeVerts[planeNumVerts];
+	planeVerts[0] = vec3(-1.0f, 0, -1.0f);
+	planeVerts[1] = vec3(-1.0f, 0, 1.0f);
+	planeVerts[2] = vec3(1.0f, 0, 1.0f);
+	planeVerts[3] = vec3(-1.0f, 0, -1.0f);
+	planeVerts[4] = vec3(1.0f, 0, 1.0f);
+	planeVerts[5] = vec3(1.0f, 0, -1.0f);
 
 	// Create the vertex array to record buffer assignments.
 	glGenVertexArrays(1, &m_vaoPlane);
@@ -262,10 +267,55 @@ void A5::initGeom()
 	// Create the plane vertex buffer
 	glGenBuffers(1, &m_vboPlane);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboPlane);
-	glBufferData(GL_ARRAY_BUFFER, numVerts * sizeof(vec3), verts, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, planeNumVerts * sizeof(vec3), planeVerts, GL_STATIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
 	GLint posAttrib = m_shader.getAttribLocation("position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	const vec3 boxVerts[8] = {
+		vec3(-0.8f, 0.3f, -0.8f), // 0 left-bottom-back
+		vec3(-0.4f, 0.3f, -0.8f), // 1 right-bottom-back
+		vec3(-0.8f, 0.7f, -0.8f), // 2 left-top-back
+		vec3(-0.4f, 0.7f, -0.8f), // 3 right-top-back
+		vec3(-0.8f, 0.3f, -0.4f), // 4 left-bottom-front
+		vec3(-0.4f, 0.3f, -0.4f), // 5 right-bottom-front
+		vec3(-0.8f, 0.7f, -0.4f), // 6 left-top-front
+		vec3(-0.4f, 0.7f, -0.4f), // 7 right-top-front
+	};
+
+	const std::size_t boxNumVerts = 6 * 2 * 3;
+	const int boxTris[boxNumVerts] = {
+		2, 0, 4, // left
+		2, 4, 6,
+		3, 5, 1, // right
+		3, 7, 5,
+		5, 4, 0, // bottom
+		5, 0, 1,
+		3, 2, 6, // top
+		3, 6, 7,
+		3, 0, 2, // back
+		3, 1, 0,
+		7, 6, 4, // front
+		7, 4, 5,
+	};
+
+	vec3 box[boxNumVerts];
+	for (int i = 0; i < boxNumVerts; ++i) {
+		box[i] = boxVerts[boxTris[i]];
+	}
+
+	// Create the vertex array to record buffer assignments.
+	glGenVertexArrays(1, &m_vaoBox);
+	glBindVertexArray(m_vaoBox);
+
+	// Create the plane vertex buffer
+	glGenBuffers(1, &m_vboBox);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboBox);
+	glBufferData(GL_ARRAY_BUFFER, boxNumVerts * sizeof(vec3), box, GL_STATIC_DRAW);
+
+	// Specify the means of extracting the position values properly.
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
