@@ -36,8 +36,8 @@ private:
 	glm::vec2 m_mousePos;
 
 	void initGeom();
-	void allocatePlane();
-	void createPlane();
+	void allocateTerrain();
+	void createTerrain();
 
 	void setShowMouse(bool showMouse);
 	bool m_showMouse;
@@ -49,9 +49,9 @@ private:
 
 	float m_movementSpeed;
 
-	float m_planeWidth;
-	float m_planeTileCountSlider;
-	std::size_t m_planeTileCount;
+	float m_terrainWidth;
+	float m_terrainTileCountSlider;
+	std::size_t m_terrainTileCount;
 	const static std::size_t MaxTiles = 1024;
 
 	float m_heightScaleFactor;
@@ -66,9 +66,9 @@ private:
 	GLint m_uniformLightColour;
 	GLint m_uniformLightIntensity;
 
-	GLuint m_vaoPlane; // Vertex Array Object
-	GLuint m_vboPlane; // Vertex Buffer Object
-	GLuint m_eboPlane; // Element Buffer Object
+	GLuint m_vaoTerrain; // Vertex Array Object
+	GLuint m_vboTerrain; // Vertex Buffer Object
+	GLuint m_eboTerrain; // Element Buffer Object
 
 	GLuint m_vaoBox; // Vertex Array Object
 	GLuint m_vboBox; // Vertex Buffer Object

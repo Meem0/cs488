@@ -35,15 +35,15 @@ A5::A5()
 	: m_mouseButtonPressed{ false, false, false }
 	, m_mousePos(0, 0)
 	, m_showMouse(false)
-	, m_planeTileCount(128)
-	, m_planeWidth(128.0f)
+	, m_terrainTileCount(128)
+	, m_terrainWidth(128.0f)
 	, m_wireframeMode(false)
 	, m_heightScaleFactor(1.0f)
 	, m_movementSpeed(4.0f)
 	, m_lightIntensity(1.0f)
 	, m_lightPosition(-100.0f, 50.0f, 0)
 {
-	m_planeTileCountSlider = static_cast<float>(m_planeTileCount);
+	m_terrainTileCountSlider = static_cast<float>(m_terrainTileCount);
 }
 
 //----------------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ void A5::init()
 	}
 
 	initGeom();
-	createPlane();
+	createTerrain();
 
 	double cursorX, cursorY;
 	glfwGetCursorPos(m_window, &cursorX, &cursorY);
@@ -142,17 +142,17 @@ void A5::guiLogic()
 		m_camera.setSpeed(m_movementSpeed);
 	}
 
-	if (ImGui::SliderFloat("Plane width", &m_planeWidth, 1.0f, 1024.0f, "%.3f", 4.0f)) {
-		createPlane();
+	if (ImGui::SliderFloat("Terrain width", &m_terrainWidth, 1.0f, 1024.0f, "%.3f", 4.0f)) {
+		createTerrain();
 	}
-	if (ImGui::SliderFloat("Tile count", &m_planeTileCountSlider, 1.0f, 1024.0f, "%.0f", 2.0f)) {
-		m_planeTileCountSlider = std::floor(m_planeTileCountSlider);
-		m_planeTileCount = static_cast<std::size_t>(m_planeTileCountSlider);
-		createPlane();
+	if (ImGui::SliderFloat("Tile count", &m_terrainTileCountSlider, 1.0f, 1024.0f, "%.0f", 2.0f)) {
+		m_terrainTileCountSlider = std::floor(m_terrainTileCountSlider);
+		m_terrainTileCount = static_cast<std::size_t>(m_terrainTileCountSlider);
+		createTerrain();
 	}
 
 	if (ImGui::SliderFloat("Height scale", &m_heightScaleFactor, 0.1f, 10.0f, "%.3f", 1.5f)) {
-		createPlane();
+		createTerrain();
 	}
 
 	ImGui::SliderFloat3("Light position", &m_lightPosition.x, -200.0f, 200.0f);
@@ -191,10 +191,10 @@ void A5::draw()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 
-	// draw the plane
-	glBindVertexArray(m_vaoPlane);
+	// draw the terrain
+	glBindVertexArray(m_vaoTerrain);
 	glUniform3f(m_uniformColour, 0.5f, 0.7f, 0.5f);
-	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_planeTileCount), GL_UNSIGNED_INT, nullptr);
+	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_INT, nullptr);
 
 	// draw the box
 	/*glBindVertexArray(m_vaoBox);
@@ -370,7 +370,7 @@ bool A5::keyInputEvent (
 
 void A5::initGeom()
 {
-	allocatePlane();
+	allocateTerrain();
 
 	const vec3 boxVerts[8] = {
 		vec3(-0.8f, 0.3f, -0.8f), // 0 left-bottom-back
@@ -408,7 +408,7 @@ void A5::initGeom()
 	glGenVertexArrays(1, &m_vaoBox);
 	glBindVertexArray(m_vaoBox);
 
-	// Create the plane vertex buffer
+	// Create the terrain vertex buffer
 	glGenBuffers(1, &m_vboBox);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboBox);
 	glBufferData(GL_ARRAY_BUFFER, boxNumVerts * sizeof(vec3), box, GL_STATIC_DRAW);
@@ -426,23 +426,23 @@ void A5::initGeom()
 	CHECK_GL_ERRORS;
 }
 
-void A5::allocatePlane()
+void A5::allocateTerrain()
 {
 	std::size_t maxVertexCount = tilesVertexCount(MaxTiles);
 	std::size_t maxIndexCount = tilesIndexCount(MaxTiles);
 
 	// Create the vertex array to record buffer assignments.
-	glGenVertexArrays(1, &m_vaoPlane);
-	glBindVertexArray(m_vaoPlane);
+	glGenVertexArrays(1, &m_vaoTerrain);
+	glBindVertexArray(m_vaoTerrain);
 
-	// Create the plane vertex buffer
-	glGenBuffers(1, &m_vboPlane);
-	glBindBuffer(GL_ARRAY_BUFFER, m_vboPlane);
+	// Create the terrain vertex buffer
+	glGenBuffers(1, &m_vboTerrain);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrain);
 	glBufferData(GL_ARRAY_BUFFER, maxVertexCount * sizeof(vec3), nullptr, GL_STATIC_DRAW);
 
-	// Create the plane element buffer
-	glGenBuffers(1, &m_eboPlane);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboPlane);
+	// Create the terrain element buffer
+	glGenBuffers(1, &m_eboTerrain);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, maxIndexCount * sizeof(std::size_t), nullptr, GL_STATIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
@@ -456,20 +456,20 @@ void A5::allocatePlane()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void A5::createPlane()
+void A5::createTerrain()
 {
-	assert(m_planeTileCount <= MaxTiles);
+	assert(m_terrainTileCount <= MaxTiles);
 
 	FastNoise noise;
 	noise.SetSeed(20171111);
 	noise.SetNoiseType(FastNoise::SimplexFractal);
 
-	const std::size_t planeVertexCount = tilesVertexCount(m_planeTileCount);
-	vector<vec3> planeVertices(planeVertexCount);
+	const std::size_t terrainVertexCount = tilesVertexCount(m_terrainTileCount);
+	vector<vec3> terarinVertices(terrainVertexCount);
 
-	const std::size_t n = m_planeTileCount + 1;
-	float tileWidth = m_planeWidth / static_cast<float>(m_planeTileCount);
-	for (std::size_t i = 0; i < planeVertexCount; ++i) {
+	const std::size_t n = m_terrainTileCount + 1;
+	float tileWidth = m_terrainWidth / static_cast<float>(m_terrainTileCount);
+	for (std::size_t i = 0; i < terrainVertexCount; ++i) {
 		std::size_t row = i / n;
 		std::size_t col = i % n;
 
@@ -484,14 +484,14 @@ void A5::createPlane()
 		int noiseY = static_cast<int>(static_cast<float>(MaxTiles) * static_cast<float>(col) / static_cast<float>(n));
 		float y = m_heightScaleFactor * noise.GetNoise(noiseX, noiseY);
 
-		planeVertices[i] = vec3(x, y, z);
+		terarinVertices[i] = vec3(x, y, z);
 	}
 
-	const std::size_t planeIndexCount = tilesIndexCount(m_planeTileCount);
-	vector<std::size_t> planeIndices(planeIndexCount);
-	for (std::size_t tileIdx = 0; tileIdx < m_planeTileCount * m_planeTileCount; ++tileIdx) {
-		std::size_t row = tileIdx / m_planeTileCount;
-		std::size_t col = tileIdx % m_planeTileCount;
+	const std::size_t terrainIndexCount = tilesIndexCount(m_terrainTileCount);
+	vector<std::size_t> terrainIndices(terrainIndexCount);
+	for (std::size_t tileIdx = 0; tileIdx < m_terrainTileCount * m_terrainTileCount; ++tileIdx) {
+		std::size_t row = tileIdx / m_terrainTileCount;
+		std::size_t col = tileIdx % m_terrainTileCount;
 
 		std::size_t a, b, c, d;
 		a = row * n + col;
@@ -500,20 +500,20 @@ void A5::createPlane()
 		d = c + 1;
 
 		std::size_t idx = tileIdx * 6;
-		planeIndices[idx++] = a;
-		planeIndices[idx++] = c;
-		planeIndices[idx++] = b;
-		planeIndices[idx++] = b;
-		planeIndices[idx++] = c;
-		planeIndices[idx++] = d;
+		terrainIndices[idx++] = a;
+		terrainIndices[idx++] = c;
+		terrainIndices[idx++] = b;
+		terrainIndices[idx++] = b;
+		terrainIndices[idx++] = c;
+		terrainIndices[idx++] = d;
 	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_vboPlane);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, planeVertexCount * sizeof(vec3), planeVertices.data());
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrain);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terarinVertices.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboPlane);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, planeIndexCount * sizeof(std::size_t), planeIndices.data());
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, terrainIndexCount * sizeof(std::size_t), terrainIndices.data());
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
