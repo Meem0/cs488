@@ -2,6 +2,7 @@
 
 #include "cs488-framework/GlErrorCheck.hpp"
 #include "cs488-framework/MathUtils.hpp"
+#include "cs488-framework/ShaderException.hpp"
 
 #include "FastNoise.h"
 
@@ -39,6 +40,8 @@ A5::A5()
 	, m_wireframeMode(false)
 	, m_heightScaleFactor(1.0f)
 	, m_movementSpeed(4.0f)
+	, m_lightIntensity(1.0f)
+	, m_lightPosition(-100.0f, 50.0f, 0)
 {
 	m_planeTileCountSlider = static_cast<float>(m_planeTileCount);
 }
@@ -70,7 +73,26 @@ void A5::init()
 	m_uniformP = m_shader.getUniformLocation("P");
 	m_uniformV = m_shader.getUniformLocation("V");
 	m_uniformM = m_shader.getUniformLocation("M");
-	m_uniformColour = m_shader.getUniformLocation("colour");
+	try {
+		m_uniformLightPosition = m_shader.getUniformLocation("lightPositionWorld");
+	}
+	catch (const ShaderException& ex) {
+	}
+	try {
+		m_uniformColour = m_shader.getUniformLocation("colour");
+	}
+	catch (const ShaderException& ex) {
+	}
+	try {
+		m_uniformLightColour = m_shader.getUniformLocation("lightColour");
+	}
+	catch (const ShaderException& ex) {
+	}
+	try {
+		m_uniformLightIntensity = m_shader.getUniformLocation("lightIntensity");
+	}
+	catch (const ShaderException& ex) {
+	}
 
 	initGeom();
 	createPlane();
@@ -133,6 +155,9 @@ void A5::guiLogic()
 		createPlane();
 	}
 
+	ImGui::SliderFloat3("Light position", &m_lightPosition.x, -200.0f, 200.0f);
+	ImGui::SliderFloat("Light intensity", &m_lightIntensity, 0, 10.0f, "%.3f", 2.0f);
+
 	ImGui::End();
 }
 
@@ -147,12 +172,17 @@ void A5::draw()
 
 	mat4 V = m_camera.getViewMatrix();
 
+	vec3 lightColour(1.0f, 1.0f, 1.0f);
+
 	m_shader.enable();
 	glEnable(GL_DEPTH_TEST);
 
 	glUniformMatrix4fv(m_uniformP, 1, GL_FALSE, value_ptr(m_projMat));
 	glUniformMatrix4fv(m_uniformV, 1, GL_FALSE, value_ptr(V));
 	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
+	glUniform3fv(m_uniformLightPosition, 1, value_ptr(m_lightPosition));
+	glUniform3fv(m_uniformLightColour, 1, value_ptr(lightColour));
+	glUniform1f(m_uniformLightIntensity, m_lightIntensity);
 
 	if (m_wireframeMode) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

@@ -44,6 +44,9 @@ private:
 
 	bool m_wireframeMode;
 
+	glm::vec3 m_lightPosition;
+	float m_lightIntensity;
+
 	float m_movementSpeed;
 
 	float m_planeWidth;
@@ -59,6 +62,9 @@ private:
 	GLint m_uniformV; // Uniform location for View matrix.
 	GLint m_uniformM; // Uniform location for Model matrix.
 	GLint m_uniformColour;
+	GLint m_uniformLightPosition;
+	GLint m_uniformLightColour;
+	GLint m_uniformLightIntensity;
 
 	GLuint m_vaoPlane; // Vertex Array Object
 	GLuint m_vboPlane; // Vertex Buffer Object
