@@ -42,6 +42,7 @@ A5::A5()
 	, m_movementSpeed(4.0f)
 	, m_lightIntensity(1.0f)
 	, m_lightPosition(-100.0f, 50.0f, 0)
+	, m_shininess(0)
 {
 	m_terrainTileCountSlider = static_cast<float>(m_terrainTileCount);
 }
@@ -76,6 +77,9 @@ void A5::init()
 	m_uniformLightPosition = m_shader.getUniformLocation("lightPosition");
 	m_uniformColour = m_shader.getUniformLocation("colour");
 	m_uniformLightColour = m_shader.getUniformLocation("lightColour");
+	m_uniformAmbientIntensity = m_shader.getUniformLocation("ambientIntensity");
+	m_uniformSpecularCoeff = m_shader.getUniformLocation("specularCoeff");
+	m_uniformShininess = m_shader.getUniformLocation("shininess");
 
 	initGeom();
 	createTerrain();
@@ -140,6 +144,15 @@ void A5::guiLogic()
 
 	ImGui::SliderFloat3("Light position", &m_lightPosition.x, -200.0f, 200.0f);
 	ImGui::SliderFloat("Light intensity", &m_lightIntensity, 0, 10.0f, "%.3f", 2.0f);
+	if (ImGui::SliderFloat("Ambient intensity", &m_ambientIntensity.x, 0, 1.0f)) {
+		m_ambientIntensity.y = m_ambientIntensity.x;
+		m_ambientIntensity.z = m_ambientIntensity.x;
+	}
+	/*if (ImGui::SliderFloat("Specular coeff.", &m_specularCoeff.x, 0, 2.0f)) {
+		m_specularCoeff.y = m_specularCoeff.x;
+		m_specularCoeff.z = m_specularCoeff.x;
+	}
+	ImGui::SliderFloat("Shininess", &m_shininess, 0, 100.0f);*/
 
 	ImGui::End();
 }
@@ -166,6 +179,9 @@ void A5::draw()
 	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
 	glUniform3fv(m_uniformLightPosition, 1, value_ptr(m_lightPosition));
 	glUniform3fv(m_uniformLightColour, 1, value_ptr(lightColour));
+	glUniform3fv(m_uniformAmbientIntensity, 1, value_ptr(m_ambientIntensity));
+	glUniform3fv(m_uniformSpecularCoeff, 1, value_ptr(m_specularCoeff));
+	glUniform1f(m_uniformShininess, m_shininess);
 
 	if (m_wireframeMode) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

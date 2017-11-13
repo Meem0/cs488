@@ -2,6 +2,9 @@
 
 uniform vec3 colour;
 uniform vec3 lightColour;
+uniform vec3 ambientIntensity;
+uniform vec3 specularCoeff;
+uniform float shininess;
 
 in vec3 fragPositionView;
 in vec3 lightPositionView;
@@ -22,5 +25,16 @@ void main() {
 
 	vec3 diffuse = colour * cosTheta;
 
-	fragColor = vec4( lightColour * diffuse, 1 );
+    // Direction from fragment to viewer (origin - fragPosition).
+    vec3 v = normalize(-fragPositionView);
+    vec3 specular = vec3(0.0);
+    if (cosTheta > 0.0) {
+		// Halfway vector.
+		vec3 h = normalize(v + l);
+        float n_dot_h = max(dot(normalView, h), 0.0);
+
+        specular = specularCoeff * pow(n_dot_h, shininess);
+    }
+
+	fragColor = vec4(ambientIntensity + lightColour * (diffuse + specular), 1 );
 }

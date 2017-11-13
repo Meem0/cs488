@@ -47,6 +47,11 @@ private:
 	glm::vec3 m_lightPosition;
 	float m_lightIntensity;
 
+	glm::vec3 m_ambientIntensity;
+
+	glm::vec3 m_specularCoeff;
+	float m_shininess;
+
 	float m_movementSpeed;
 
 	float m_terrainWidth;
@@ -64,6 +69,9 @@ private:
 	GLint m_uniformColour;
 	GLint m_uniformLightPosition;
 	GLint m_uniformLightColour;
+	GLint m_uniformAmbientIntensity;
+	GLint m_uniformSpecularCoeff;
+	GLint m_uniformShininess;
 
 	GLuint m_vaoTerrain; // Vertex Array Object
 	GLuint m_vboTerrain; // Vertex Buffer Object
