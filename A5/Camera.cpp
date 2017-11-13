@@ -10,7 +10,7 @@
 using namespace glm;
 
 Camera::Camera()
-	: m_needToRecalculateViewMatrix(false)
+	: m_needToRecalculateViewMatrix(true)
 	, m_directionPressed{ false, false, false, false }
 	, m_speed(4.0f)
 {
