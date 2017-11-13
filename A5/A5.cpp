@@ -73,26 +73,9 @@ void A5::init()
 	m_uniformP = m_shader.getUniformLocation("P");
 	m_uniformV = m_shader.getUniformLocation("V");
 	m_uniformM = m_shader.getUniformLocation("M");
-	try {
-		m_uniformLightPosition = m_shader.getUniformLocation("lightPositionWorld");
-	}
-	catch (const ShaderException& ex) {
-	}
-	try {
-		m_uniformColour = m_shader.getUniformLocation("colour");
-	}
-	catch (const ShaderException& ex) {
-	}
-	try {
-		m_uniformLightColour = m_shader.getUniformLocation("lightColour");
-	}
-	catch (const ShaderException& ex) {
-	}
-	try {
-		m_uniformLightIntensity = m_shader.getUniformLocation("lightIntensity");
-	}
-	catch (const ShaderException& ex) {
-	}
+	m_uniformLightPosition = m_shader.getUniformLocation("lightPosition");
+	m_uniformColour = m_shader.getUniformLocation("colour");
+	m_uniformLightColour = m_shader.getUniformLocation("lightColour");
 
 	initGeom();
 	createTerrain();
@@ -173,6 +156,7 @@ void A5::draw()
 	mat4 V = m_camera.getViewMatrix();
 
 	vec3 lightColour(1.0f, 1.0f, 1.0f);
+	lightColour *= m_lightIntensity;
 
 	m_shader.enable();
 	glEnable(GL_DEPTH_TEST);
@@ -182,7 +166,6 @@ void A5::draw()
 	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
 	glUniform3fv(m_uniformLightPosition, 1, value_ptr(m_lightPosition));
 	glUniform3fv(m_uniformLightColour, 1, value_ptr(lightColour));
-	glUniform1f(m_uniformLightIntensity, m_lightIntensity);
 
 	if (m_wireframeMode) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -450,6 +433,16 @@ void A5::allocateTerrain()
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
+	// Create the terrain normals vertex buffer
+	glGenBuffers(1, &m_vboTerrainNormals);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainNormals);
+	glBufferData(GL_ARRAY_BUFFER, maxVertexCount * sizeof(vec3), nullptr, GL_STATIC_DRAW);
+
+	// Specify the means of extracting the position values properly.
+	GLint normalAttrib = m_shader.getAttribLocation("normal");
+	glEnableVertexAttribArray(normalAttrib);
+	glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
 	// Reset state
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -465,7 +458,7 @@ void A5::createTerrain()
 	noise.SetNoiseType(FastNoise::SimplexFractal);
 
 	const std::size_t terrainVertexCount = tilesVertexCount(m_terrainTileCount);
-	vector<vec3> terarinVertices(terrainVertexCount);
+	vector<vec3> terrainVertices(terrainVertexCount);
 
 	const std::size_t n = m_terrainTileCount + 1;
 	float tileWidth = m_terrainWidth / static_cast<float>(m_terrainTileCount);
@@ -484,7 +477,31 @@ void A5::createTerrain()
 		int noiseY = static_cast<int>(static_cast<float>(MaxTiles) * static_cast<float>(col) / static_cast<float>(n));
 		float y = m_heightScaleFactor * noise.GetNoise(noiseX, noiseY);
 
-		terarinVertices[i] = vec3(x, y, z);
+		terrainVertices[i] = vec3(x, y, z);
+	}
+
+	vector<vec3> terrainNormals(terrainVertexCount);
+	for (std::size_t i = 0; i < terrainVertexCount; ++i) {
+		std::size_t row = i / n;
+		std::size_t col = i % n;
+
+		std::size_t row2, col2;
+		float hl, hr, hu, hd;
+
+		row2 = row == 0 ? row : row - 1;
+		hl = terrainVertices[row2 * n + col].y;
+
+		row2 = row == n - 1 ? row : row + 1;
+		hr = terrainVertices[row2 * n + col].y;
+
+		col2 = col == 0 ? col : col - 1;
+		hu = terrainVertices[row * n + col2].y;
+
+		col2 = col == n - 1 ? col : col + 1;
+		hd = terrainVertices[row * n + col2].y;
+
+		vec3 normal(hl - hr, 2.0f, hd - hu);
+		terrainNormals[i] = glm::normalize(normal);
 	}
 
 	const std::size_t terrainIndexCount = tilesIndexCount(m_terrainTileCount);
@@ -509,7 +526,11 @@ void A5::createTerrain()
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrain);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terarinVertices.data());
+	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainVertices.data());
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainNormals);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainNormals.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);

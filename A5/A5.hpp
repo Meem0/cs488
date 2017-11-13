@@ -64,10 +64,10 @@ private:
 	GLint m_uniformColour;
 	GLint m_uniformLightPosition;
 	GLint m_uniformLightColour;
-	GLint m_uniformLightIntensity;
 
 	GLuint m_vaoTerrain; // Vertex Array Object
 	GLuint m_vboTerrain; // Vertex Buffer Object
+	GLuint m_vboTerrainNormals; // Vertex Buffer Object
 	GLuint m_eboTerrain; // Element Buffer Object
 
 	GLuint m_vaoBox; // Vertex Array Object
