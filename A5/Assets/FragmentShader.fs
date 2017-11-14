@@ -34,6 +34,10 @@ void main() {
         float n_dot_h = max(dot(normalView, h), 0.0);
 
         specular = specularCoeff * pow(n_dot_h, shininess);
+
+		if (shininess >= 0) {
+			specular = vec3(0);
+		}
     }
 
 	fragColor = vec4(ambientIntensity + lightColour * (diffuse + specular), 1 );
