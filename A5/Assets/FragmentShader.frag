@@ -25,8 +25,8 @@ void main() {
 	//  - light is behind the triangle -> 0
 	float cosTheta = max( dot(normalView, l ), 0 );
 
-	vec3 texColour = texture(tex, fragTexCoord).xyz;
-	vec3 diffuse = colour * texColour * cosTheta;
+	vec4 texColour = texture(tex, fragTexCoord);
+	vec4 diffuse = vec4(colour, 1) * texColour * cosTheta;
 
     // Direction from fragment to viewer (origin - fragPosition).
     vec3 v = normalize(-fragPositionView);
@@ -43,5 +43,5 @@ void main() {
 		}
     }
 
-	fragColor = vec4(ambientIntensity + lightColour * (diffuse + specular), 1 );
+	fragColor = vec4(ambientIntensity, 0) + vec4(lightColour, 1) * (diffuse + vec4(specular, 0));
 }

@@ -3,6 +3,7 @@
 #include "cs488-framework/GlErrorCheck.hpp"
 #include "cs488-framework/MathUtils.hpp"
 #include "cs488-framework/ShaderException.hpp"
+#include "cs488-framework/ObjFileDecoder.hpp"
 
 #include "FastNoise.h"
 
@@ -201,6 +202,10 @@ void A5::draw()
 	/*glBindVertexArray(m_vaoBox);
 	glUniform3f(m_uniformColour, 0.65f, 0.5f, 0.5f);
 	glDrawArrays(GL_TRIANGLES, 0, 6 * 2 * 3);*/
+
+	// draw the tree
+	glBindVertexArray(m_vaoTree);
+	glDrawArrays(GL_TRIANGLES, 0, m_treeVertexCount);
 
 	m_shader.disable();
 
@@ -419,6 +424,61 @@ void A5::initGeom()
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
+
+	string treeObjectName;
+	vector<vec3> treeVertices, treeNormals;
+	vector<vec2> treeUVs;
+	ObjFileDecoder::decode(
+		getAssetFilePath("treepineforest01.obj").c_str(),
+		treeObjectName,
+		treeVertices,
+		treeNormals,
+		treeUVs
+	);
+	m_treeVertexCount = treeVertices.size();
+
+	for (auto& vert : treeVertices) {
+		vert *= 0.01f;
+	}
+
+	// Create the vertex array to record buffer assignments.
+	glGenVertexArrays(1, &m_vaoTree);
+	glBindVertexArray(m_vaoTree);
+
+	// Create the Tree vertex buffer
+	GLuint vboTree;
+	glGenBuffers(1, &vboTree);
+	glBindBuffer(GL_ARRAY_BUFFER, vboTree);
+	glBufferData(GL_ARRAY_BUFFER, treeVertices.size() * sizeof(vec3), treeVertices.data(), GL_STATIC_DRAW);
+
+	// Specify the means of extracting the position values properly.
+	posAttrib = m_shader.getAttribLocation("position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Create the Tree normals vertex buffer
+	GLuint vboTreeNormals;
+	glGenBuffers(1, &vboTreeNormals);
+	glBindBuffer(GL_ARRAY_BUFFER, vboTreeNormals);
+	glBufferData(GL_ARRAY_BUFFER, treeNormals.size() * sizeof(vec3), treeNormals.data(), GL_STATIC_DRAW);
+
+	// Specify the means of extracting the normal values properly.
+	GLint normalAttrib = m_shader.getAttribLocation("normal");
+	glEnableVertexAttribArray(normalAttrib);
+	glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Create the Tree texture coordinates vertex buffer
+	GLuint vboTreeUVs;
+	glGenBuffers(1, &vboTreeUVs);
+	glBindBuffer(GL_ARRAY_BUFFER, vboTreeUVs);
+	glBufferData(GL_ARRAY_BUFFER, treeUVs.size() * sizeof(vec2), treeUVs.data(), GL_STATIC_DRAW);
+
+	// Specify the means of extracting the textures values properly.
+	GLint textureAttrib = m_shader.getAttribLocation("texCoord");
+	glEnableVertexAttribArray(textureAttrib);
+	glVertexAttribPointer(textureAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+
 	// Reset state
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -479,9 +539,10 @@ void A5::allocateTerrain()
 	m_shader.enable();
 
 	int width, height, channels;
-	string texturePath = getAssetFilePath("pineforest03.dds");
-	unsigned char* image = SOIL_load_image(texturePath.c_str(), &width, &height, &channels, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	string texturePath = getAssetFilePath("vurt_PineAtlas04.dds");
+	unsigned char* image = SOIL_load_image(texturePath.c_str(), &width, &height, &channels, SOIL_LOAD_AUTO);
+	//std::vector<unsigned short> img(image, image + (width * height));
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 	SOIL_free_image_data(image);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

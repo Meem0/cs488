@@ -79,6 +79,9 @@ private:
 	GLuint m_vboTerrainTexCoords; // Vertex Buffer Object
 	GLuint m_eboTerrain; // Element Buffer Object
 
+	GLuint m_vaoTree; // Vertex Array Object
+	std::size_t m_treeVertexCount;
+
 	GLuint m_vaoBox; // Vertex Array Object
 	GLuint m_vboBox; // Vertex Buffer Object
 
