@@ -173,8 +173,8 @@
     <ClInclude Include="Window.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\FragmentShader.fs" />
-    <None Include="Assets\VertexShader.vs" />
+    <None Include="Assets\FragmentShader.frag" />
+    <None Include="Assets\VertexShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -67,9 +67,9 @@ void A5::init()
 	// Build the shader
 	m_shader.generateProgramObject();
 	m_shader.attachVertexShader(
-		getAssetFilePath("VertexShader.vs").c_str());
+		getAssetFilePath("VertexShader.vert").c_str());
 	m_shader.attachFragmentShader(
-		getAssetFilePath("FragmentShader.fs").c_str());
+		getAssetFilePath("FragmentShader.frag").c_str());
 	m_shader.link();
 
 	// Set up the uniforms

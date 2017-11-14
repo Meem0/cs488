@@ -109,10 +109,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\FragmentShader.fs">
+    <None Include="Assets\FragmentShader.frag">
       <Filter>Assets</Filter>
     </None>
-    <None Include="Assets\VertexShader.vs">
+    <None Include="Assets\VertexShader.vert">
       <Filter>Assets</Filter>
     </None>
   </ItemGroup>
