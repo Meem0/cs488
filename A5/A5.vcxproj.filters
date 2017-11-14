@@ -31,6 +31,12 @@
     <Filter Include="Assets">
       <UniqueIdentifier>{28a6fb6f-7516-44fe-8c98-73ba7e3200e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="lib">
+      <UniqueIdentifier>{30cb9829-5e9e-4fdc-93fd-cc45db8deec5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\soil">
+      <UniqueIdentifier>{08deb73b-e840-42fa-9486-645db3da709b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\cs488-framework\GlErrorCheck.cpp">
@@ -74,6 +80,18 @@
     </ClCompile>
     <ClCompile Include="FastNoise.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\soil\image_DXT.c">
+      <Filter>lib\soil</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\soil\image_helper.c">
+      <Filter>lib\soil</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\soil\SOIL.c">
+      <Filter>lib\soil</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\soil\stb_image_aug.c">
+      <Filter>lib\soil</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -92,6 +92,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -158,6 +159,10 @@
     <ClCompile Include="A5.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="FastNoise.cpp" />
+    <ClCompile Include="lib\soil\image_DXT.c" />
+    <ClCompile Include="lib\soil\image_helper.c" />
+    <ClCompile Include="lib\soil\SOIL.c" />
+    <ClCompile Include="lib\soil\stb_image_aug.c" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>

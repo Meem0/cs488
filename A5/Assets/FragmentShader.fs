@@ -5,10 +5,12 @@ uniform vec3 lightColour;
 uniform vec3 ambientIntensity;
 uniform vec3 specularCoeff;
 uniform float shininess;
+uniform sampler2D tex;
 
 in vec3 fragPositionView;
 in vec3 lightPositionView;
 in vec3 normalView;
+in vec2 fragTexCoord;
 
 out vec4 fragColor;
 
@@ -23,7 +25,8 @@ void main() {
 	//  - light is behind the triangle -> 0
 	float cosTheta = max( dot(normalView, l ), 0 );
 
-	vec3 diffuse = colour * cosTheta;
+	vec3 texColour = texture(tex, fragTexCoord).xyz;
+	vec3 diffuse = colour * texColour * cosTheta;
 
     // Direction from fragment to viewer (origin - fragPosition).
     vec3 v = normalize(-fragPositionView);

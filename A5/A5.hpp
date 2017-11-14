@@ -76,10 +76,13 @@ private:
 	GLuint m_vaoTerrain; // Vertex Array Object
 	GLuint m_vboTerrain; // Vertex Buffer Object
 	GLuint m_vboTerrainNormals; // Vertex Buffer Object
+	GLuint m_vboTerrainTexCoords; // Vertex Buffer Object
 	GLuint m_eboTerrain; // Element Buffer Object
 
 	GLuint m_vaoBox; // Vertex Array Object
 	GLuint m_vboBox; // Vertex Buffer Object
+
+	GLuint m_terrainTexture;
 
 	glm::mat4 m_projMat;
 

@@ -6,6 +6,8 @@
 
 #include "FastNoise.h"
 
+#include <SOIL.h>
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -192,7 +194,7 @@ void A5::draw()
 
 	// draw the terrain
 	glBindVertexArray(m_vaoTerrain);
-	glUniform3f(m_uniformColour, 0.5f, 0.7f, 0.5f);
+	glUniform3f(m_uniformColour, 1.0f, 1.0f, 1.0f);
 	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_INT, nullptr);
 
 	// draw the box
@@ -454,10 +456,40 @@ void A5::allocateTerrain()
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainNormals);
 	glBufferData(GL_ARRAY_BUFFER, maxVertexCount * sizeof(vec3), nullptr, GL_STATIC_DRAW);
 
-	// Specify the means of extracting the position values properly.
+	// Specify the means of extracting the normal values properly.
 	GLint normalAttrib = m_shader.getAttribLocation("normal");
 	glEnableVertexAttribArray(normalAttrib);
 	glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Create the terrain texture coordinates vertex buffer
+	glGenBuffers(1, &m_vboTerrainTexCoords);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainTexCoords);
+	glBufferData(GL_ARRAY_BUFFER, maxVertexCount * sizeof(vec2), nullptr, GL_STATIC_DRAW);
+
+	// Specify the means of extracting the textures values properly.
+	GLint textureAttrib = m_shader.getAttribLocation("texCoord");
+	glEnableVertexAttribArray(textureAttrib);
+	glVertexAttribPointer(textureAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+
+	// Create the texture
+	glGenTextures(1, &m_terrainTexture);
+	glBindTexture(GL_TEXTURE_2D, m_terrainTexture);
+
+	m_shader.enable();
+
+	int width, height, channels;
+	string texturePath = getAssetFilePath("pineforest03.dds");
+	unsigned char* image = SOIL_load_image(texturePath.c_str(), &width, &height, &channels, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	SOIL_free_image_data(image);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	m_shader.disable();
 
 	// Reset state
 	glBindVertexArray(0);
@@ -520,6 +552,14 @@ void A5::createTerrain()
 		terrainNormals[i] = glm::normalize(normal);
 	}
 
+	vector<vec2> terrainTexCoords(terrainVertexCount);
+	for (std::size_t i = 0; i < terrainVertexCount; ++i) {
+		terrainTexCoords[i].s = (terrainVertices[i].x + m_terrainWidth / 2.0f) / m_terrainWidth;
+		terrainTexCoords[i].t = (terrainVertices[i].z + m_terrainWidth / 2.0f) / m_terrainWidth;
+		//terrainTexCoords[i].s = terrainVertices[i].x;
+		//terrainTexCoords[i].t = terrainVertices[i].z;
+	}
+
 	const std::size_t terrainIndexCount = tilesIndexCount(m_terrainTileCount);
 	vector<std::size_t> terrainIndices(terrainIndexCount);
 	for (std::size_t tileIdx = 0; tileIdx < m_terrainTileCount * m_terrainTileCount; ++tileIdx) {
@@ -547,6 +587,10 @@ void A5::createTerrain()
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainNormals);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainNormals.data());
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainTexCoords);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainTexCoords.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);
