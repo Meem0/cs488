@@ -3,9 +3,9 @@
 #include "cs488-framework/GlErrorCheck.hpp"
 #include "cs488-framework/MathUtils.hpp"
 #include "cs488-framework/ShaderException.hpp"
-#include "cs488-framework/ObjFileDecoder.hpp"
 
 #include "FastNoise.h"
+#include "ObjFileDecoder.hpp"
 
 #include <SOIL.h>
 
@@ -177,6 +177,9 @@ void A5::draw()
 	m_shader.enable();
 	glEnable(GL_DEPTH_TEST);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glUniformMatrix4fv(m_uniformP, 1, GL_FALSE, value_ptr(m_projMat));
 	glUniformMatrix4fv(m_uniformV, 1, GL_FALSE, value_ptr(V));
 	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
@@ -198,14 +201,9 @@ void A5::draw()
 	glUniform3f(m_uniformColour, 1.0f, 1.0f, 1.0f);
 	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_INT, nullptr);
 
-	// draw the box
-	/*glBindVertexArray(m_vaoBox);
-	glUniform3f(m_uniformColour, 0.65f, 0.5f, 0.5f);
-	glDrawArrays(GL_TRIANGLES, 0, 6 * 2 * 3);*/
-
 	// draw the tree
 	glBindVertexArray(m_vaoTree);
-	glDrawArrays(GL_TRIANGLES, 0, m_treeVertexCount);
+	glDrawElements(GL_TRIANGLES, m_treeIndexCount, GL_UNSIGNED_SHORT, nullptr);
 
 	m_shader.disable();
 
@@ -378,64 +376,19 @@ void A5::initGeom()
 {
 	allocateTerrain();
 
-	const vec3 boxVerts[8] = {
-		vec3(-0.8f, 0.3f, -0.8f), // 0 left-bottom-back
-		vec3(-0.4f, 0.3f, -0.8f), // 1 right-bottom-back
-		vec3(-0.8f, 0.7f, -0.8f), // 2 left-top-back
-		vec3(-0.4f, 0.7f, -0.8f), // 3 right-top-back
-		vec3(-0.8f, 0.3f, -0.4f), // 4 left-bottom-front
-		vec3(-0.4f, 0.3f, -0.4f), // 5 right-bottom-front
-		vec3(-0.8f, 0.7f, -0.4f), // 6 left-top-front
-		vec3(-0.4f, 0.7f, -0.4f), // 7 right-top-front
-	};
-
-	const std::size_t boxNumVerts = 6 * 2 * 3;
-	const int boxTris[boxNumVerts] = {
-		2, 0, 4, // left
-		2, 4, 6,
-		3, 5, 1, // right
-		3, 7, 5,
-		5, 4, 0, // bottom
-		5, 0, 1,
-		3, 2, 6, // top
-		3, 6, 7,
-		3, 0, 2, // back
-		3, 1, 0,
-		7, 6, 4, // front
-		7, 4, 5,
-	};
-
-	vec3 box[boxNumVerts];
-	for (int i = 0; i < boxNumVerts; ++i) {
-		box[i] = boxVerts[boxTris[i]];
-	}
-
-	// Create the vertex array to record buffer assignments.
-	glGenVertexArrays(1, &m_vaoBox);
-	glBindVertexArray(m_vaoBox);
-
-	// Create the terrain vertex buffer
-	glGenBuffers(1, &m_vboBox);
-	glBindBuffer(GL_ARRAY_BUFFER, m_vboBox);
-	glBufferData(GL_ARRAY_BUFFER, boxNumVerts * sizeof(vec3), box, GL_STATIC_DRAW);
-
-	// Specify the means of extracting the position values properly.
-	GLint posAttrib = m_shader.getAttribLocation("position");
-	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-
 	string treeObjectName;
 	vector<vec3> treeVertices, treeNormals;
 	vector<vec2> treeUVs;
+	vector<FaceData> treeFaceData;
 	ObjFileDecoder::decode(
 		getAssetFilePath("treepineforest01.obj").c_str(),
 		treeObjectName,
 		treeVertices,
 		treeNormals,
-		treeUVs
+		treeUVs,
+		treeFaceData
 	);
-	m_treeVertexCount = treeVertices.size();
+	m_treeIndexCount = treeFaceData.size() * 3;
 
 	for (auto& vert : treeVertices) {
 		vert *= 0.01f;
@@ -452,7 +405,7 @@ void A5::initGeom()
 	glBufferData(GL_ARRAY_BUFFER, treeVertices.size() * sizeof(vec3), treeVertices.data(), GL_STATIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
-	posAttrib = m_shader.getAttribLocation("position");
+	GLint posAttrib = m_shader.getAttribLocation("position");
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
@@ -477,6 +430,11 @@ void A5::initGeom()
 	GLint textureAttrib = m_shader.getAttribLocation("texCoord");
 	glEnableVertexAttribArray(textureAttrib);
 	glVertexAttribPointer(textureAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Create the tree element buffer
+	glGenBuffers(1, &m_eboTree);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTree);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, treeFaceData.size() * sizeof(FaceData), treeFaceData.data(), GL_STATIC_DRAW);
 
 
 	// Reset state
@@ -531,7 +489,6 @@ void A5::allocateTerrain()
 	glEnableVertexAttribArray(textureAttrib);
 	glVertexAttribPointer(textureAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-
 	// Create the texture
 	glGenTextures(1, &m_terrainTexture);
 	glBindTexture(GL_TEXTURE_2D, m_terrainTexture);
@@ -541,14 +498,14 @@ void A5::allocateTerrain()
 	int width, height, channels;
 	string texturePath = getAssetFilePath("vurt_PineAtlas04.dds");
 	unsigned char* image = SOIL_load_image(texturePath.c_str(), &width, &height, &channels, SOIL_LOAD_AUTO);
-	//std::vector<unsigned short> img(image, image + (width * height));
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+	GLint format = channels == 4 ? GL_RGBA : GL_RGB;
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, image);
 	SOIL_free_image_data(image);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	m_shader.disable();
 

@@ -5,17 +5,9 @@
 #include <string>
 
 struct FaceData {
-	std::size_t v1;
-	std::size_t v2;
-	std::size_t v3;
-
-	std::size_t vt1;
-	std::size_t vt2;
-	std::size_t vt3;
-
-	std::size_t vn1;
-	std::size_t vn2;
-	std::size_t vn3;
+	unsigned short v1;
+	unsigned short v2;
+	unsigned short v3;
 };
 
 class ObjFileDecoder {

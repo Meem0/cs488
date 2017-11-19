@@ -26,7 +26,7 @@ void main() {
 	float cosTheta = max( dot(normalView, l ), 0 );
 
 	vec4 texColour = texture(tex, fragTexCoord);
-	vec4 diffuse = vec4(colour, 1) * texColour * cosTheta;
+	vec4 diffuse = vec4(colour * texColour.xyz * cosTheta, texColour.w);
 
     // Direction from fragment to viewer (origin - fragPosition).
     vec3 v = normalize(-fragPositionView);

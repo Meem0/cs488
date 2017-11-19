@@ -148,8 +148,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\cs488-framework\GlErrorCheck.cpp" />
-    <ClCompile Include="..\shared\cs488-framework\MeshConsolidator.cpp" />
-    <ClCompile Include="..\shared\cs488-framework\ObjFileDecoder.cpp" />
     <ClCompile Include="..\shared\cs488-framework\ShaderProgram.cpp" />
     <ClCompile Include="..\shared\gl3w\GL\gl3w.c" />
     <ClCompile Include="..\shared\imgui\imgui.cpp" />
@@ -164,12 +162,14 @@
     <ClCompile Include="lib\soil\SOIL.c" />
     <ClCompile Include="lib\soil\stb_image_aug.c" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ObjFileDecoder.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="A5.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="FastNoise.h" />
+    <ClInclude Include="ObjFileDecoder.hpp" />
     <ClInclude Include="Window.hpp" />
   </ItemGroup>
   <ItemGroup>

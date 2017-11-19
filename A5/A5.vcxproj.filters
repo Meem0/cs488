@@ -42,12 +42,6 @@
     <ClCompile Include="..\shared\cs488-framework\GlErrorCheck.cpp">
       <Filter>shared\cs488-framework</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\cs488-framework\MeshConsolidator.cpp">
-      <Filter>shared\cs488-framework</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\cs488-framework\ObjFileDecoder.cpp">
-      <Filter>shared\cs488-framework</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\cs488-framework\ShaderProgram.cpp">
       <Filter>shared\cs488-framework</Filter>
     </ClCompile>
@@ -93,6 +87,9 @@
     <ClCompile Include="lib\soil\stb_image_aug.c">
       <Filter>lib\soil</Filter>
     </ClCompile>
+    <ClCompile Include="ObjFileDecoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="A5.hpp">
@@ -105,6 +102,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FastNoise.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjFileDecoder.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
