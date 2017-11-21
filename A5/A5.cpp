@@ -380,13 +380,15 @@ void A5::initGeom()
 	vector<vec3> treeVertices, treeNormals;
 	vector<vec2> treeUVs;
 	vector<FaceData> treeFaceData;
+	vector<MaterialData> treeGroupData;
 	ObjFileDecoder::decode(
 		getAssetFilePath("treepineforest01.obj").c_str(),
 		treeObjectName,
 		treeVertices,
 		treeNormals,
 		treeUVs,
-		treeFaceData
+		treeFaceData,
+		treeGroupData
 	);
 	m_treeIndexCount = treeFaceData.size() * 3;
 

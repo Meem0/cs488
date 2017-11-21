@@ -5,6 +5,8 @@ Kd 1 1 1
 Ks 1 1 1
 d 1
 Ns 33
+map_Kd vurt_PineAtlas04.dds
+bump vurt_PineAtlas04_n.dds
 
 newmtl Material.000559
 Ka 1 1 1
@@ -12,3 +14,5 @@ Kd 1 1 1
 Ks 1 1 1
 d 1
 Ns 33
+map_Kd vurt_barkpine1.dds
+bump vurt_barkpine1_n.dds

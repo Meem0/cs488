@@ -10,6 +10,12 @@ struct FaceData {
 	unsigned short v3;
 };
 
+struct MaterialData {
+	std::size_t startIndex;
+	std::string diffuseMap;
+	std::string bumpMap;
+};
+
 class ObjFileDecoder {
 public:
 
@@ -30,7 +36,8 @@ public:
             std::vector<glm::vec3>& positions,
             std::vector<glm::vec3>& normals,
             std::vector<glm::vec2>& uvCoords,
-			std::vector<FaceData>& faces
+			std::vector<FaceData>& faces,
+			std::vector<MaterialData>& groups
     );
 };
 

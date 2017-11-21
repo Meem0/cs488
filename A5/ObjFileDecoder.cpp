@@ -6,19 +6,73 @@ using namespace glm;
 #include <iostream>
 #include <cstring>
 #include <cassert>
+#include <map>
 using namespace std;
 
 #include "cs488-framework/Exception.hpp"
 
+void parseMaterialLib(
+	const string& materialLibPath,
+	std::vector<MaterialData>& materials,
+	const map<string, std::size_t>& materialIndices
+) {
+
+	ifstream in(materialLibPath, std::ios::in);
+	in.exceptions(std::ifstream::badbit);
+
+	if (!in) {
+		stringstream errorMessage;
+		errorMessage << "Unable to open .mtl file " << materialLibPath
+					 << " within method parseMaterialLib" << endl;
+
+		throw Exception(errorMessage.str().c_str());
+	}
+
+	string currentLine;
+	MaterialData* currentMaterial = nullptr;
+
+	while (!in.eof()) {
+		try {
+			getline(in, currentLine);
+		}
+		catch (const ifstream::failure &e) {
+			in.close();
+			stringstream errorMessage;
+			errorMessage << "Error calling getline() -- " << e.what() << endl;
+			throw Exception(errorMessage.str());
+		}
+		if (currentLine.substr(0, 7) == "newmtl ") {
+			string materialName;
+			istringstream s(currentLine.substr(7));
+			s >> materialName;
+
+			auto itr = materialIndices.find(materialName);
+			if (itr != materialIndices.end()) {
+				currentMaterial = &materials[itr->second];
+			}
+		}
+		else if (currentMaterial != nullptr && currentLine.substr(0, 7) == "map_Kd ") {
+			istringstream s(currentLine.substr(7));
+			s >> currentMaterial->diffuseMap;
+		}
+		else if (currentMaterial != nullptr && currentLine.substr(0, 5) == "bump ") {
+			istringstream s(currentLine.substr(5));
+			s >> currentMaterial->bumpMap;
+		}
+	}
+
+	in.close();
+}
 
 //---------------------------------------------------------------------------------------
 void ObjFileDecoder::decode(
-		const char* objFilePath,
-		std::string& objectName,
-        std::vector<vec3>& positions,
-        std::vector<vec3>& normals,
-        std::vector<vec2>& uvCoords,
-		std::vector<FaceData>& faces
+	const char* objFilePath,
+	std::string& objectName,
+    std::vector<vec3>& positions,
+    std::vector<vec3>& normals,
+    std::vector<vec2>& uvCoords,
+	std::vector<FaceData>& faces,
+	std::vector<MaterialData>& materials
 ) {
 
 	// Empty containers, and start fresh before inserting data from .obj file
@@ -26,6 +80,7 @@ void ObjFileDecoder::decode(
 	normals.clear();
 	uvCoords.clear();
 	faces.clear();
+	materials.clear();
 
     ifstream in(objFilePath, std::ios::in);
     in.exceptions(std::ifstream::badbit);
@@ -37,6 +92,10 @@ void ObjFileDecoder::decode(
 
         throw Exception(errorMessage.str().c_str());
     }
+
+	// maps material names to indices of the groups vector
+	map<string, std::size_t> materialIndices;
+	string materialLibPath;
 
     string currentLine;
 	unsigned short vn1, vn2, vn3, vt1, vt2, vt3;
@@ -56,9 +115,8 @@ void ObjFileDecoder::decode(
 		    // Get entire line excluding first 2 chars.
 		    istringstream s(currentLine.substr(2));
 		    s >> objectName;
-
-
-	    } else if (currentLine.substr(0, 2) == "v ") {
+		}
+		else if (currentLine.substr(0, 2) == "v ") {
             // Vertex data on this line.
             // Get entire line excluding first 2 chars.
             istringstream s(currentLine.substr(2));
@@ -67,8 +125,8 @@ void ObjFileDecoder::decode(
             s >> vertex.y;
             s >> vertex.z;
             positions.push_back(vertex);
-
-        } else if (currentLine.substr(0, 3) == "vn ") {
+        }
+		else if (currentLine.substr(0, 3) == "vn ") {
             // Normal data on this line.
             // Get entire line excluding first 2 chars.
             istringstream s(currentLine.substr(2));
@@ -77,8 +135,8 @@ void ObjFileDecoder::decode(
             s >> normal.y;
             s >> normal.z;
             normals.push_back(normal);
-
-        } else if (currentLine.substr(0, 3) == "vt ") {
+        }
+		else if (currentLine.substr(0, 3) == "vt ") {
             // Texture coordinate data on this line.
             // Get entire line excluding first 2 chars.
             istringstream s(currentLine.substr(2));
@@ -87,8 +145,8 @@ void ObjFileDecoder::decode(
             s >> textureCoord.t;
 			textureCoord.t = 1.0f - textureCoord.t;
             uvCoords.push_back(textureCoord);
-
-        } else if (currentLine.substr(0, 2) == "f ") {
+        }
+		else if (currentLine.substr(0, 2) == "f ") {
             // Face index data on this line.
 
             int index;
@@ -125,7 +183,19 @@ void ObjFileDecoder::decode(
 			--faceData.v3;
 
 			faces.push_back(move(faceData));
-        }
+		}
+		else if (currentLine.substr(0, 7) == "mtllib ") {
+			istringstream s(currentLine.substr(7));
+			s >> materialLibPath;
+		}
+		else if (!materialLibPath.empty() && currentLine.substr(0, 7) == "usemtl ") {
+			istringstream s(currentLine.substr(7));
+			string materialName;
+			s >> materialName;
+			materialIndices.emplace(make_pair(materialName, materials.size()));
+
+			materials.push_back(MaterialData{ faces.size(), "", "" });
+		}
     }
 
     in.close();
@@ -137,5 +207,11 @@ void ObjFileDecoder::decode(
 		objectName.assign(ptr+1);
 		size_t pos = objectName.find('.');
 		objectName.resize(pos);
+	}
+
+	if (!materialLibPath.empty()) {
+		string objFilePathStr(objFilePath);
+		materialLibPath = objFilePathStr.substr(0, objFilePathStr.find_last_of("\\/") + 1) + materialLibPath;
+		parseMaterialLib(materialLibPath, materials, materialIndices);
 	}
 }
