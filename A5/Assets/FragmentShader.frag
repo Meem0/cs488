@@ -28,8 +28,11 @@ void main() {
 	vec4 texColour = texture(tex, fragTexCoord);
 	vec4 diffuse = vec4(colour * texColour.xyz * cosTheta, texColour.w);
 
-	if (diffuse.a < 0.01) {
+	if (diffuse.a < 0.5) {
 		discard;
+	}
+	else {
+		diffuse.a = 1.0;
 	}
 
     // Direction from fragment to viewer (origin - fragPosition).
