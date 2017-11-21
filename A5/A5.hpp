@@ -8,6 +8,8 @@
 
 #include <glm/glm.hpp>
 
+#include <vector>
+
 #include "Camera.hpp"
 
 class A5 : public Window {
@@ -78,12 +80,16 @@ private:
 	GLuint m_vboTerrainNormals; // Vertex Buffer Object
 	GLuint m_vboTerrainTexCoords; // Vertex Buffer Object
 	GLuint m_eboTerrain; // Element Buffer Object
+	GLuint m_terrainTexture;
+
+	struct GroupInfo {
+		std::size_t indexCount;
+		GLuint texture;
+	};
 
 	GLuint m_vaoTree; // Vertex Array Object
 	GLuint m_eboTree; // Element Buffer Object
-	std::size_t m_treeIndexCount;
-
-	GLuint m_terrainTexture;
+	std::vector<GroupInfo> m_treeGroups;
 
 	glm::mat4 m_projMat;
 

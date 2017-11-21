@@ -30,6 +30,17 @@ namespace {
 	{
 		return tileCount * tileCount * 2 * 3;
 	}
+
+	void loadTexture(const string& texturePath) {
+		int width, height, channels;
+		unsigned char* image = SOIL_load_image(texturePath.c_str(), &width, &height, &channels, SOIL_LOAD_AUTO);
+		GLint format = channels == 4 ? GL_RGBA : GL_RGB;
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, image);
+		SOIL_free_image_data(image);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
 }
 
 //----------------------------------------------------------------------------------------
@@ -198,12 +209,24 @@ void A5::draw()
 
 	// draw the terrain
 	glBindVertexArray(m_vaoTerrain);
+	glBindTexture(GL_TEXTURE_2D, m_terrainTexture);
 	glUniform3f(m_uniformColour, 1.0f, 1.0f, 1.0f);
 	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_INT, nullptr);
 
 	// draw the tree
+	size_t currentIndex = 0;
 	glBindVertexArray(m_vaoTree);
-	glDrawElements(GL_TRIANGLES, m_treeIndexCount, GL_UNSIGNED_SHORT, nullptr);
+	for (const auto& group : m_treeGroups) {
+		glBindTexture(GL_TEXTURE_2D, group.texture);
+		glDrawElements(
+			GL_TRIANGLES,
+			group.indexCount,
+			GL_UNSIGNED_SHORT,
+			(GLvoid*)(currentIndex * sizeof(unsigned short))
+		);
+
+		currentIndex += group.indexCount;
+	}
 
 	m_shader.disable();
 
@@ -390,7 +413,23 @@ void A5::initGeom()
 		treeFaceData,
 		treeGroupData
 	);
-	m_treeIndexCount = treeFaceData.size() * 3;
+	for (int i = 0; i < treeGroupData.size(); ++i) {
+		GLuint textureID;
+		// Create the texture
+		glGenTextures(1, &textureID);
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		loadTexture(getAssetFilePath(treeGroupData[i].diffuseMap.c_str()));
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		size_t startIndex = treeGroupData[i].startIndex;
+		size_t endIndex = (i + 1 < treeGroupData.size()) ? treeGroupData[i + 1].startIndex : treeFaceData.size();
+
+		m_treeGroups.push_back({
+			(endIndex - startIndex) * 3,
+			textureID
+		});
+	}
 
 	for (auto& vert : treeVertices) {
 		vert *= 0.01f;
@@ -495,21 +534,10 @@ void A5::allocateTerrain()
 	glGenTextures(1, &m_terrainTexture);
 	glBindTexture(GL_TEXTURE_2D, m_terrainTexture);
 
-	m_shader.enable();
+	loadTexture(getAssetFilePath("pineforest03.dds"));
 
-	int width, height, channels;
-	string texturePath = getAssetFilePath("vurt_PineAtlas04.dds");
-	unsigned char* image = SOIL_load_image(texturePath.c_str(), &width, &height, &channels, SOIL_LOAD_AUTO);
-	GLint format = channels == 4 ? GL_RGBA : GL_RGB;
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, image);
-	SOIL_free_image_data(image);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	m_shader.disable();
 
 	// Reset state
 	glBindVertexArray(0);
