@@ -28,6 +28,10 @@ void main() {
 	vec4 texColour = texture(tex, fragTexCoord);
 	vec4 diffuse = vec4(colour * texColour.xyz * cosTheta, texColour.w);
 
+	if (diffuse.a < 0.01) {
+		discard;
+	}
+
     // Direction from fragment to viewer (origin - fragPosition).
     vec3 v = normalize(-fragPositionView);
     vec3 specular = vec3(0.0);

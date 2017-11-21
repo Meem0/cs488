@@ -213,6 +213,8 @@ void A5::draw()
 	glUniform3f(m_uniformColour, 1.0f, 1.0f, 1.0f);
 	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_INT, nullptr);
 
+	glDisable(GL_CULL_FACE);
+
 	// draw the tree
 	size_t currentIndex = 0;
 	glBindVertexArray(m_vaoTree);
@@ -227,6 +229,8 @@ void A5::draw()
 
 		currentIndex += group.indexCount;
 	}
+
+	glEnable(GL_CULL_FACE);
 
 	m_shader.disable();
 
