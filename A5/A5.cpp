@@ -6,10 +6,7 @@
 
 #include "FastNoise.h"
 #include "ObjFileDecoder.hpp"
-
-#define GLIML_NO_PVR 1
-#define GLIML_NO_KTX 1
-#include <gliml/gliml.h>
+#include "Utility.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -18,7 +15,6 @@
 
 #include <cassert>
 #include <vector>
-#include <fstream>
 
 using namespace glm;
 using namespace std;
@@ -32,56 +28,6 @@ namespace {
 	std::size_t tilesIndexCount(std::size_t tileCount)
 	{
 		return tileCount * tileCount * 2 * 3;
-	}
-
-	GLuint loadTexture(const string& texturePath) {
-		// load file into memory (gliml doesn't have any file I/O functions)
-		vector<char> buffer;
-		std::size_t size = 0;
-		{
-			ifstream file(texturePath, ios::in | ios::binary);
-			file.seekg(0, ios::end);
-			size = file.tellg();
-			file.seekg(0, ios::beg);
-			buffer.resize(size);
-			file.read(buffer.data(), size);
-		}
-
-		gliml::context c;
-		c.enable_dxt(true);
-
-		GLuint textureID = 0;
-
-		if (c.load(buffer.data(), size)) {
-			assert(c.is_2d());
-			assert(c.is_compressed());
-			assert(c.num_faces() == 1);
-
-			glGenTextures(1, &textureID);
-			glBindTexture(GL_TEXTURE_2D, textureID);
-
-			int faceIdx = 0;
-			for (int mipIdx = 0; mipIdx < c.num_mipmaps(faceIdx); ++mipIdx) {
-				glCompressedTexImage2D(
-					GL_TEXTURE_2D,
-					mipIdx,
-					c.image_internal_format(),
-					c.image_width(faceIdx, mipIdx),
-					c.image_height(faceIdx, mipIdx),
-					0,
-					c.image_size(faceIdx, mipIdx),
-					c.image_data(faceIdx, mipIdx)
-				);
-			}
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, c.num_mipmaps(faceIdx) - 1);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		}
-
-		return textureID;
 	}
 }
 
@@ -121,9 +67,9 @@ void A5::init()
 	// Build the shader
 	m_shader.generateProgramObject();
 	m_shader.attachVertexShader(
-		getAssetFilePath("VertexShader.vert").c_str());
+		Util::getAssetFilePath("VertexShader.vert").c_str());
 	m_shader.attachFragmentShader(
-		getAssetFilePath("FragmentShader.frag").c_str());
+		Util::getAssetFilePath("FragmentShader.frag").c_str());
 	m_shader.link();
 
 	// Set up the uniforms
@@ -255,24 +201,10 @@ void A5::draw()
 	glUniform3f(m_uniformColour, 1.0f, 1.0f, 1.0f);
 	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_INT, nullptr);
 
-	glDisable(GL_CULL_FACE);
-
-	// draw the tree
-	size_t currentIndex = 0;
-	glBindVertexArray(m_vaoTree);
-	for (const auto& group : m_treeGroups) {
-		glBindTexture(GL_TEXTURE_2D, group.texture);
-		glDrawElements(
-			GL_TRIANGLES,
-			group.indexCount,
-			GL_UNSIGNED_SHORT,
-			(GLvoid*)(currentIndex * sizeof(unsigned short))
-		);
-
-		currentIndex += group.indexCount;
+	// draw the trees
+	for (auto& tree : m_trees) {
+		tree.draw();
 	}
-
-	glEnable(GL_CULL_FACE);
 
 	m_shader.disable();
 
@@ -445,87 +377,25 @@ void A5::initGeom()
 {
 	allocateTerrain();
 
-	string treeObjectName;
-	vector<vec3> treeVertices, treeNormals;
-	vector<vec2> treeUVs;
-	vector<FaceData> treeFaceData;
-	vector<MaterialData> treeGroupData;
-	ObjFileDecoder::decode(
-		getAssetFilePath("treepineforest01.obj").c_str(),
-		treeObjectName,
-		treeVertices,
-		treeNormals,
-		treeUVs,
-		treeFaceData,
-		treeGroupData
-	);
-	for (int i = 0; i < treeGroupData.size(); ++i) {
-		GLuint textureID;
-		// Create the texture
-		textureID = loadTexture(getAssetFilePath(treeGroupData[i].diffuseMap.c_str()));
-
-		size_t startIndex = treeGroupData[i].startIndex;
-		size_t endIndex = (i + 1 < treeGroupData.size()) ? treeGroupData[i + 1].startIndex : treeFaceData.size();
-
-		m_treeGroups.push_back({
-			(endIndex - startIndex) * 3,
-			textureID
-		});
+	static const std::size_t TreeGridSideCount = 4;
+	const float TreeGridWidth = m_terrainWidth * 0.8f;
+	vec3 positions[TreeGridSideCount * TreeGridSideCount];
+	float gap = TreeGridWidth / static_cast<float>(TreeGridSideCount);
+	for (int r = 0; r < TreeGridSideCount; ++r) {
+		for (int c = 0; c < TreeGridSideCount; ++c) {
+			positions[r * TreeGridSideCount + c] = vec3(
+				r * gap - TreeGridWidth / 4.0f,
+				0.5f,
+				c * gap - TreeGridWidth / 4.0f
+			);
+		}
 	}
 
-	for (auto& vert : treeVertices) {
-		vert *= 0.01f;
+	for (const auto& pos : positions) {
+		m_trees.emplace_back(m_shader);
+		m_trees.back().loadModel("treepineforest01.obj");
+		m_trees.back().setWorldPosition(pos);
 	}
-
-	// Create the vertex array to record buffer assignments.
-	glGenVertexArrays(1, &m_vaoTree);
-	glBindVertexArray(m_vaoTree);
-
-	// Create the Tree vertex buffer
-	GLuint vboTree;
-	glGenBuffers(1, &vboTree);
-	glBindBuffer(GL_ARRAY_BUFFER, vboTree);
-	glBufferData(GL_ARRAY_BUFFER, treeVertices.size() * sizeof(vec3), treeVertices.data(), GL_STATIC_DRAW);
-
-	// Specify the means of extracting the position values properly.
-	GLint posAttrib = m_shader.getAttribLocation("position");
-	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-	// Create the Tree normals vertex buffer
-	GLuint vboTreeNormals;
-	glGenBuffers(1, &vboTreeNormals);
-	glBindBuffer(GL_ARRAY_BUFFER, vboTreeNormals);
-	glBufferData(GL_ARRAY_BUFFER, treeNormals.size() * sizeof(vec3), treeNormals.data(), GL_STATIC_DRAW);
-
-	// Specify the means of extracting the normal values properly.
-	GLint normalAttrib = m_shader.getAttribLocation("normal");
-	glEnableVertexAttribArray(normalAttrib);
-	glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-	// Create the Tree texture coordinates vertex buffer
-	GLuint vboTreeUVs;
-	glGenBuffers(1, &vboTreeUVs);
-	glBindBuffer(GL_ARRAY_BUFFER, vboTreeUVs);
-	glBufferData(GL_ARRAY_BUFFER, treeUVs.size() * sizeof(vec2), treeUVs.data(), GL_STATIC_DRAW);
-
-	// Specify the means of extracting the textures values properly.
-	GLint textureAttrib = m_shader.getAttribLocation("texCoord");
-	glEnableVertexAttribArray(textureAttrib);
-	glVertexAttribPointer(textureAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-	// Create the tree element buffer
-	glGenBuffers(1, &m_eboTree);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTree);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, treeFaceData.size() * sizeof(FaceData), treeFaceData.data(), GL_STATIC_DRAW);
-
-
-	// Reset state
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	CHECK_GL_ERRORS;
 }
 
 void A5::allocateTerrain()
@@ -573,7 +443,7 @@ void A5::allocateTerrain()
 	glVertexAttribPointer(textureAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
 	// Create the texture
-	m_terrainTexture = loadTexture(getAssetFilePath("pineforest03.dds"));
+	m_terrainTexture = Util::loadTexture(Util::getAssetFilePath("pineforest03.dds"));
 
 	// Reset state
 	glBindVertexArray(0);

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "Camera.hpp"
+#include "Tree.hpp"
 
 class A5 : public Window {
 public:
@@ -82,16 +83,8 @@ private:
 	GLuint m_eboTerrain; // Element Buffer Object
 	GLuint m_terrainTexture;
 
-	struct GroupInfo {
-		std::size_t indexCount;
-		GLuint texture;
-	};
-
-	GLuint m_vaoTree; // Vertex Array Object
-	GLuint m_eboTree; // Element Buffer Object
-	std::vector<GroupInfo> m_treeGroups;
-
 	glm::mat4 m_projMat;
 
 	Camera m_camera;
+	std::vector<Tree> m_trees;
 };

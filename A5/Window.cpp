@@ -2,6 +2,8 @@
 #include "cs488-framework/Exception.hpp"
 #include "cs488-framework/OpenGLImport.hpp"
 
+#include "Utility.hpp"
+
 #include <sstream>
 #include <iostream>
 #include <cstdio>
@@ -19,7 +21,6 @@ extern "C" {
 static void renderImGui (int framebufferWidth, int framebufferHeight);
 
 //-- Static member initialization:
-string Window::m_exec_dir = ".";
 shared_ptr<Window> Window::m_instance = nullptr;
 
 
@@ -297,11 +298,13 @@ void Window::launch (
 		float fps
 ) {
 	char * slash = strrchr( argv[0], '/' );
+	string execDir;
 	if( slash == nullptr ) {
-		m_exec_dir = ".";
+		execDir = ".";
 	} else {
-		m_exec_dir = string( argv[0], slash );
+		execDir = string( argv[0], slash );
 	}
+	Util::setAssetFilePathBase(execDir + "/Assets/");
 
 	if( m_instance == nullptr ) {
         m_instance = shared_ptr<Window>(window);
@@ -531,10 +534,4 @@ static void printGLInfo() {
 			cout << extension << endl;
 		}
 	}
-}
-
-//----------------------------------------------------------------------------------------
-std::string Window::getAssetFilePath(const char *base)
-{
-	return m_exec_dir + "/Assets/" + base;
 }
