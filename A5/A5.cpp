@@ -392,8 +392,8 @@ void A5::initGeom()
 	}
 
 	for (const auto& pos : positions) {
-		m_trees.emplace_back(m_shader);
-		m_trees.back().loadModel("treepineforest01.obj");
+		m_trees.emplace_back();
+		m_trees.back().loadModel(m_shader, "treepineforest01.obj");
 		m_trees.back().setWorldPosition(pos);
 	}
 }

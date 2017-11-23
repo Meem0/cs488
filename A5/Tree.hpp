@@ -11,17 +11,15 @@ class ShaderProgram;
 
 class Tree {
 public:
-	Tree(ShaderProgram&);
+	Tree();
 
-	void loadModel(const std::string& objFileName);
+	void loadModel(const ShaderProgram& shader, const std::string& objFileName);
 
 	void setWorldPosition(const glm::vec3& pos);
 
 	void draw();
 
 private:
-	ShaderProgram& m_shader;
-
 	GLint m_uniformM;
 	glm::mat4 m_modelMat;
 

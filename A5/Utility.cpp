@@ -1,7 +1,9 @@
 #include "Utility.hpp"
 
 #include <cassert>
+#include <chrono>
 #include <fstream>
+#include <map>
 #include <vector>
 
 #define GLIML_NO_PVR 1
@@ -11,7 +13,14 @@
 using namespace std;
 
 namespace Util {
+	map<string, GLuint> textureCache;
+
 	GLuint loadTexture(const string& texturePath) {
+		auto itr = textureCache.find(texturePath);
+		if (itr != textureCache.end()) {
+			return itr->second;
+		}
+
 		// load file into memory (gliml doesn't have any file I/O functions)
 		vector<char> buffer;
 		std::size_t size = 0;
@@ -56,6 +65,8 @@ namespace Util {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+			textureCache.emplace(texturePath, textureID);
 		}
 
 		return textureID;
@@ -76,5 +87,29 @@ namespace Util {
 	void setAssetFilePathBase(const string& path)
 	{
 		assetFilePathBase = path;
+	}
+
+	map<string, chrono::steady_clock::time_point> debugTimerMap;
+	bool debugTimerFirstTime = true;
+
+	void startDebugTimer(const string& message)
+	{
+		debugTimerMap.emplace(message, chrono::steady_clock::now());
+	}
+
+	void endDebugTimer(const string& message)
+	{
+		using namespace chrono;
+
+		steady_clock::time_point time = steady_clock::now();
+		auto itr = debugTimerMap.find(message);
+
+		duration<double> timeSpan = duration_cast<duration<double>>(time - itr->second);
+
+		ofstream debugFile("log.txt", ios::out | (debugTimerFirstTime ? 0 : ios::app));
+		debugFile << message << " " << timeSpan.count() << endl;
+		debugTimerFirstTime = false;
+
+		debugTimerMap.erase(itr);
 	}
 }

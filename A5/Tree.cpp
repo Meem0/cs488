@@ -12,18 +12,21 @@
 using namespace glm;
 using namespace std;
 
-Tree::Tree(ShaderProgram& shader)
-	: m_shader(shader)
+Tree::Tree()
 {
-	m_uniformM = m_shader.getUniformLocation("M");
 }
 
-void Tree::loadModel(const string& objFileName) {
+void Tree::loadModel(const ShaderProgram& shader, const string& objFileName) {
+	m_uniformM = shader.getUniformLocation("M");
+
 	string objectName;
 	vector<vec3> vertices, normals;
 	vector<vec2> uvs;
 	vector<FaceData> faceData;
 	vector<MaterialData> groupData;
+
+	Util::startDebugTimer("tree obj");
+
 	ObjFileDecoder::decode(
 		Util::getAssetFilePath(objFileName).c_str(),
 		objectName,
@@ -33,7 +36,10 @@ void Tree::loadModel(const string& objFileName) {
 		faceData,
 		groupData
 	);
-	for (int i = 0; i < groupData.size(); ++i) {
+
+	Util::endDebugTimer("tree obj");
+
+	for (size_t i = 0; i < groupData.size(); ++i) {
 		GLuint textureID;
 		// Create the texture
 		textureID = Util::loadTexture(Util::getAssetFilePath(groupData[i].diffuseMap.c_str()));
@@ -62,7 +68,7 @@ void Tree::loadModel(const string& objFileName) {
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec3), vertices.data(), GL_STATIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
-	GLint posAttrib = m_shader.getAttribLocation("position");
+	GLint posAttrib = shader.getAttribLocation("position");
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
@@ -73,7 +79,7 @@ void Tree::loadModel(const string& objFileName) {
 	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), normals.data(), GL_STATIC_DRAW);
 
 	// Specify the means of extracting the normal values properly.
-	GLint normalAttrib = m_shader.getAttribLocation("normal");
+	GLint normalAttrib = shader.getAttribLocation("normal");
 	glEnableVertexAttribArray(normalAttrib);
 	glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
@@ -84,7 +90,7 @@ void Tree::loadModel(const string& objFileName) {
 	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), uvs.data(), GL_STATIC_DRAW);
 
 	// Specify the means of extracting the textures values properly.
-	GLint textureAttrib = m_shader.getAttribLocation("texCoord");
+	GLint textureAttrib = shader.getAttribLocation("texCoord");
 	glEnableVertexAttribArray(textureAttrib);
 	glVertexAttribPointer(textureAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
