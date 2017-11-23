@@ -544,7 +544,7 @@ void A5::createTerrain()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainTexCoords);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainTexCoords.data());
+	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec2), terrainTexCoords.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);
