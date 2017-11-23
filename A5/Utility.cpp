@@ -13,6 +13,16 @@
 using namespace std;
 
 namespace Util {
+
+	void readFile(const std::string& path, vector<char>& buffer, bool binary) {
+		ifstream file(path, ios::in | (binary ? ios::binary : 0));
+		file.seekg(0, ios::end);
+		streamoff len = file.tellg();
+		file.seekg(0, ios::beg);
+		buffer.resize(static_cast<size_t>(len));
+		file.read(buffer.data(), len);
+	}
+
 	map<string, GLuint> textureCache;
 
 	GLuint loadTexture(const string& texturePath) {
@@ -23,22 +33,14 @@ namespace Util {
 
 		// load file into memory (gliml doesn't have any file I/O functions)
 		vector<char> buffer;
-		std::size_t size = 0;
-		{
-			ifstream file(texturePath, ios::in | ios::binary);
-			file.seekg(0, ios::end);
-			size = file.tellg();
-			file.seekg(0, ios::beg);
-			buffer.resize(size);
-			file.read(buffer.data(), size);
-		}
+		readFile(texturePath, buffer, true);
 
 		gliml::context c;
 		c.enable_dxt(true);
 
 		GLuint textureID = 0;
 
-		if (c.load(buffer.data(), size)) {
+		if (c.load(buffer.data(), buffer.size())) {
 			assert(c.is_2d());
 			assert(c.is_compressed());
 			assert(c.num_faces() == 1);
