@@ -16,45 +16,21 @@ Tree::Tree()
 {
 }
 
-void Tree::loadModel(const ShaderProgram& shader, const string& objFileName) {
+void Tree::loadModel(const ShaderProgram& shader, const Mesh& mesh) {
 	m_uniformM = shader.getUniformLocation("M");
 
-	string objectName;
-	vector<vec3> vertices, normals;
-	vector<vec2> uvs;
-	vector<FaceData> faceData;
-	vector<MaterialData> groupData;
-
-	Util::startDebugTimer("tree obj");
-
-	ObjFileDecoder::decode(
-		Util::getAssetFilePath(objFileName).c_str(),
-		objectName,
-		vertices,
-		normals,
-		uvs,
-		faceData,
-		groupData
-	);
-
-	Util::endDebugTimer("tree obj");
-
-	for (size_t i = 0; i < groupData.size(); ++i) {
+	for (size_t i = 0; i < mesh.groupData.size(); ++i) {
 		GLuint textureID;
 		// Create the texture
-		textureID = Util::loadTexture(Util::getAssetFilePath(groupData[i].diffuseMap.c_str()));
+		textureID = Util::loadTexture(Util::getAssetFilePath(mesh.groupData[i].diffuseMap.c_str()));
 
-		size_t startIndex = groupData[i].startIndex;
-		size_t endIndex = (i + 1 < groupData.size()) ? groupData[i + 1].startIndex : faceData.size();
+		size_t startIndex = mesh.groupData[i].startIndex;
+		size_t endIndex = (i + 1 < mesh.groupData.size()) ? mesh.groupData[i + 1].startIndex : mesh.faceData.size();
 
 		m_meshGroups.push_back({
 			(endIndex - startIndex) * 3,
 			textureID
 		});
-	}
-
-	for (auto& vert : vertices) {
-		vert *= 0.01f;
 	}
 
 	// Create the vertex array to record buffer assignments.
@@ -65,7 +41,7 @@ void Tree::loadModel(const ShaderProgram& shader, const string& objFileName) {
 	GLuint vbo;
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec3), vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, mesh.positions.size() * sizeof(vec3), mesh.positions.data(), GL_STATIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
 	GLint posAttrib = shader.getAttribLocation("position");
@@ -76,7 +52,7 @@ void Tree::loadModel(const ShaderProgram& shader, const string& objFileName) {
 	GLuint vboNormals;
 	glGenBuffers(1, &vboNormals);
 	glBindBuffer(GL_ARRAY_BUFFER, vboNormals);
-	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), normals.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, mesh.normals.size() * sizeof(vec3), mesh.normals.data(), GL_STATIC_DRAW);
 
 	// Specify the means of extracting the normal values properly.
 	GLint normalAttrib = shader.getAttribLocation("normal");
@@ -87,7 +63,7 @@ void Tree::loadModel(const ShaderProgram& shader, const string& objFileName) {
 	GLuint vboUVs;
 	glGenBuffers(1, &vboUVs);
 	glBindBuffer(GL_ARRAY_BUFFER, vboUVs);
-	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), uvs.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, mesh.uvs.size() * sizeof(vec2), mesh.uvs.data(), GL_STATIC_DRAW);
 
 	// Specify the means of extracting the textures values properly.
 	GLint textureAttrib = shader.getAttribLocation("texCoord");
@@ -97,7 +73,12 @@ void Tree::loadModel(const ShaderProgram& shader, const string& objFileName) {
 	// Create the tree element buffer
 	glGenBuffers(1, &m_ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, faceData.size() * sizeof(FaceData), faceData.data(), GL_STATIC_DRAW);
+	glBufferData(
+		GL_ELEMENT_ARRAY_BUFFER,
+		mesh.faceData.size() * sizeof(FaceData),
+		mesh.faceData.data(),
+		GL_STATIC_DRAW
+	);
 
 	// Reset state
 	glBindVertexArray(0);

@@ -7,13 +7,14 @@
 #include <string>
 #include <vector>
 
+struct Mesh;
 class ShaderProgram;
 
 class Tree {
 public:
 	Tree();
 
-	void loadModel(const ShaderProgram& shader, const std::string& objFileName);
+	void loadModel(const ShaderProgram& shader, const Mesh& mesh);
 
 	void setWorldPosition(const glm::vec3& pos);
 

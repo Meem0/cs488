@@ -81,22 +81,14 @@ void parseMaterialLib(
 }
 
 //---------------------------------------------------------------------------------------
-void ObjFileDecoder::decode(
-	const char* objFilePath,
-	std::string& objectName,
-    std::vector<vec3>& positions,
-    std::vector<vec3>& normals,
-    std::vector<vec2>& uvs,
-	std::vector<FaceData>& faces,
-	std::vector<MaterialData>& materials
-) {
-
+void ObjFileDecoder::decode(const char* objFilePath, Mesh& mesh)
+{
 	// Empty containers, and start fresh before inserting data from .obj file
-	positions.clear();
-	normals.clear();
-	uvs.clear();
-	faces.clear();
-	materials.clear();
+	mesh.positions.clear();
+	mesh.normals.clear();
+	mesh.uvs.clear();
+	mesh.faceData.clear();
+	mesh.groupData.clear();
 
 	vector<char> buffer;
 	Util::readFile(objFilePath, buffer);
@@ -108,7 +100,7 @@ void ObjFileDecoder::decode(
 	char* currentPos = buffer.data();
 	unsigned short vn1, vn2, vn3, vt1, vt2, vt3;
 
-	objectName = "";
+	mesh.name = "";
 
     while (*currentPos != '\0') {
 		if (strncmp(currentPos, "v ", 2) == 0) {
@@ -120,7 +112,7 @@ void ObjFileDecoder::decode(
 			vertex.y = strtof(currentPos, &currentPos);
 			vertex.z = strtof(currentPos, &currentPos);
 
-            positions.push_back(move(vertex));
+			mesh.positions.push_back(move(vertex));
         }
 		else if (strncmp(currentPos, "vn ", 3) == 0) {
 			currentPos += 3;
@@ -131,7 +123,7 @@ void ObjFileDecoder::decode(
 			normal.y = strtof(currentPos, &currentPos);
 			normal.z = strtof(currentPos, &currentPos);
 
-			normals.push_back(move(normal));
+			mesh.normals.push_back(move(normal));
         }
 		else if (strncmp(currentPos, "vt ", 3) == 0) {
 			currentPos += 3;
@@ -142,7 +134,7 @@ void ObjFileDecoder::decode(
 			uv.t = strtof(currentPos, &currentPos);
 
 			uv.t = 1.0f - uv.t;
-			uvs.push_back(move(uv));
+			mesh.uvs.push_back(move(uv));
         }
 		else if (strncmp(currentPos, "f ", 2) == 0) {
 			currentPos += 2;
@@ -192,7 +184,7 @@ void ObjFileDecoder::decode(
 			--faceData.v2;
 			--faceData.v3;
 
-			faces.push_back(move(faceData));
+			mesh.faceData.push_back(move(faceData));
 		}
 		else if (strncmp(currentPos, "o ", 2) == 0) {
 			currentPos += 2;
@@ -203,7 +195,7 @@ void ObjFileDecoder::decode(
 				++endPos;
 			}
 
-			objectName = string(currentPos, endPos);
+			mesh.name = string(currentPos, endPos);
 			currentPos = endPos;
 		}
 		else if (strncmp(currentPos, "mtllib ", 7) == 0) {
@@ -228,8 +220,8 @@ void ObjFileDecoder::decode(
 			}
 
 			string materialName = string(currentPos, endPos);
-			materialIndices.emplace(make_pair(materialName, materials.size()));
-			materials.push_back(MaterialData{ faces.size(), "", "" });
+			materialIndices.emplace(make_pair(materialName, mesh.groupData.size()));
+			mesh.groupData.push_back(MaterialData{ mesh.faceData.size(), "", "" });
 
 			currentPos = endPos;
 		}
@@ -245,18 +237,18 @@ void ObjFileDecoder::decode(
 		}
     }
 
-	if (objectName.compare("") == 0) {
+	if (mesh.name.compare("") == 0) {
 		// No 'o' object name tag defined in .obj file, so use the file name
 		// minus the '.obj' ending as the objectName.
 		const char * ptr = strrchr(objFilePath, '/');
-		objectName.assign(ptr+1);
-		size_t pos = objectName.find('.');
-		objectName.resize(pos);
+		mesh.name.assign(ptr+1);
+		size_t pos = mesh.name.find('.');
+		mesh.name.resize(pos);
 	}
 
 	if (!materialLibPath.empty()) {
 		string objFilePathStr(objFilePath);
 		materialLibPath = objFilePathStr.substr(0, objFilePathStr.find_last_of("\\/") + 1) + materialLibPath;
-		parseMaterialLib(materialLibPath, materials, materialIndices);
+		parseMaterialLib(materialLibPath, mesh.groupData, materialIndices);
 	}
 }

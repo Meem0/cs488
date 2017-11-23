@@ -377,23 +377,30 @@ void A5::initGeom()
 {
 	allocateTerrain();
 
-	static const std::size_t TreeGridSideCount = 4;
-	const float TreeGridWidth = m_terrainWidth * 0.8f;
+	static const std::size_t TreeGridSideCount = 8;
+	const float TreeGridWidth = m_terrainWidth * 0.9f;
 	vec3 positions[TreeGridSideCount * TreeGridSideCount];
 	float gap = TreeGridWidth / static_cast<float>(TreeGridSideCount);
 	for (int r = 0; r < TreeGridSideCount; ++r) {
 		for (int c = 0; c < TreeGridSideCount; ++c) {
 			positions[r * TreeGridSideCount + c] = vec3(
-				r * gap - TreeGridWidth / 4.0f,
+				r * gap - TreeGridWidth / 2.0f + gap / 2.0f,
 				0.5f,
-				c * gap - TreeGridWidth / 4.0f
+				c * gap - TreeGridWidth / 2.0f + gap / 2.0f
 			);
 		}
 	}
 
+	Mesh treeMesh;
+	ObjFileDecoder::decode(Util::getAssetFilePath("treepineforest01.obj").c_str(), treeMesh);
+
+	for (auto& vert : treeMesh.positions) {
+		vert *= 0.01f;
+	}
+
 	for (const auto& pos : positions) {
 		m_trees.emplace_back();
-		m_trees.back().loadModel(m_shader, "treepineforest01.obj");
+		m_trees.back().loadModel(m_shader, treeMesh);
 		m_trees.back().setWorldPosition(pos);
 	}
 }
