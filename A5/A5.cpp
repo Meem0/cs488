@@ -515,10 +515,8 @@ void A5::createTerrain()
 
 	vector<vec2> terrainTexCoords(terrainVertexCount);
 	for (std::size_t i = 0; i < terrainVertexCount; ++i) {
-		terrainTexCoords[i].s = (terrainVertices[i].x + m_terrainWidth / 2.0f) / m_terrainWidth;
-		terrainTexCoords[i].t = (terrainVertices[i].z + m_terrainWidth / 2.0f) / m_terrainWidth;
-		//terrainTexCoords[i].s = terrainVertices[i].x;
-		//terrainTexCoords[i].t = terrainVertices[i].z;
+		terrainTexCoords[i].s = terrainVertices[i].x;
+		terrainTexCoords[i].t = terrainVertices[i].z;
 	}
 
 	const std::size_t terrainIndexCount = tilesIndexCount(m_terrainTileCount);
