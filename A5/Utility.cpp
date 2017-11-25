@@ -19,7 +19,7 @@ namespace Util {
 		file.seekg(0, ios::end);
 		streamoff len = file.tellg();
 		file.seekg(0, ios::beg);
-		buffer.resize(static_cast<size_t>(len));
+		buffer.resize(static_cast<size_t>(len + 1));
 		file.read(buffer.data(), len);
 	}
 
