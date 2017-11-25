@@ -159,6 +159,7 @@
     <ClCompile Include="FastNoise.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ObjFileDecoder.cpp" />
+    <ClCompile Include="TestCube.cpp" />
     <ClCompile Include="Tree.cpp" />
     <ClCompile Include="Utility.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="FastNoise.h" />
     <ClInclude Include="ObjFileDecoder.hpp" />
+    <ClInclude Include="TestCube.hpp" />
     <ClInclude Include="Tree.hpp" />
     <ClInclude Include="Utility.hpp" />
     <ClInclude Include="Window.hpp" />

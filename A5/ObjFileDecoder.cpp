@@ -100,6 +100,8 @@ void ObjFileDecoder::decode(const char* objFilePath, Mesh& mesh)
 	char* currentPos = buffer.data();
 	unsigned short vn1, vn2, vn3, vt1, vt2, vt3;
 
+	vector<unsigned short> fullFaceData;
+
 	mesh.name = "";
 
     while (*currentPos != '\0') {
@@ -144,7 +146,7 @@ void ObjFileDecoder::decode(const char* objFilePath, Mesh& mesh)
 			FaceData faceData;
 			int count = 0;
 
-#define get static_cast<unsigned short>(strtoul(currentPos, &currentPos, 0))
+#define get static_cast<unsigned short>(strtoul(currentPos, &currentPos, 0)) - 1
 
 			faceData.v1 = get;
 			assert(*currentPos == '/');
@@ -174,17 +176,22 @@ void ObjFileDecoder::decode(const char* objFilePath, Mesh& mesh)
 
 			currentPos += count;
 
-			assert(
-				faceData.v1 == vt1 && faceData.v1 == vn1 &&
+			if (faceData.v1 == vt1 && faceData.v1 == vn1 &&
 				faceData.v2 == vt2 && faceData.v2 == vn2 &&
-				faceData.v3 == vt3 && faceData.v3 == vn3
-			);
-
-			--faceData.v1;
-			--faceData.v2;
-			--faceData.v3;
-
-			mesh.faceData.push_back(move(faceData));
+				faceData.v3 == vt3 && faceData.v3 == vn3) {
+				mesh.faceData.push_back(move(faceData));
+			}
+			else {
+				fullFaceData.push_back(faceData.v1);
+				fullFaceData.push_back(vt1);
+				fullFaceData.push_back(vn1);
+				fullFaceData.push_back(faceData.v2);
+				fullFaceData.push_back(vt2);
+				fullFaceData.push_back(vn2);
+				fullFaceData.push_back(faceData.v3);
+				fullFaceData.push_back(vt3);
+				fullFaceData.push_back(vn3);
+			}
 		}
 		else if (strncmp(currentPos, "o ", 2) == 0) {
 			currentPos += 2;
@@ -250,5 +257,69 @@ void ObjFileDecoder::decode(const char* objFilePath, Mesh& mesh)
 		string objFilePathStr(objFilePath);
 		materialLibPath = objFilePathStr.substr(0, objFilePathStr.find_last_of("\\/") + 1) + materialLibPath;
 		parseMaterialLib(materialLibPath, mesh.groupData, materialIndices);
+	}
+
+
+	if (!fullFaceData.empty()) {
+		for (auto& faceData : mesh.faceData) {
+			fullFaceData.push_back(faceData.v1);
+			fullFaceData.push_back(faceData.v1);
+			fullFaceData.push_back(faceData.v1);
+			fullFaceData.push_back(faceData.v2);
+			fullFaceData.push_back(faceData.v2);
+			fullFaceData.push_back(faceData.v2);
+			fullFaceData.push_back(faceData.v3);
+			fullFaceData.push_back(faceData.v3);
+			fullFaceData.push_back(faceData.v3);
+		}
+		mesh.faceData.clear();
+
+		typedef unsigned long long PackedVertex;
+		map<PackedVertex, unsigned short> m;
+		vector<vec3> positions;
+		vector<vec3> normals;
+		vector<vec2> uvs;
+		size_t faceDataPos = 0;
+		for (size_t i = 0; i < fullFaceData.size(); i += 3) {
+			unsigned short v = fullFaceData[i];
+			unsigned short vt = fullFaceData[i + 1];
+			unsigned short vn = fullFaceData[i + 2];
+
+			unsigned short index = 0;
+
+			PackedVertex pv =
+				(static_cast<PackedVertex>(v) << (2 * 8 * sizeof(unsigned short))) |
+				(static_cast<PackedVertex>(vt) << (8 * sizeof(unsigned short))) |
+				static_cast<PackedVertex>(vn);
+			auto itr = m.find(pv);
+			if (itr == m.end()) {
+				assert(positions.size() == normals.size() && positions.size() == uvs.size());
+
+				index = static_cast<unsigned short>(positions.size());
+				m.emplace(pv, index);
+
+				positions.push_back(mesh.positions[v]);
+				normals.push_back(mesh.normals[vn]);
+				uvs.push_back(mesh.uvs[vt]);
+			}
+			else {
+				index = itr->second;
+			}
+
+			if (faceDataPos == 0) {
+				mesh.faceData.push_back(FaceData{ index, 0, 0 });
+			}
+			else if (faceDataPos == 1) {
+				mesh.faceData.back().v2 = index;
+			}
+			else if (faceDataPos == 2) {
+				mesh.faceData.back().v3 = index;
+			}
+			faceDataPos = (faceDataPos + 1) % 3;
+		}
+
+		swap(positions, mesh.positions);
+		swap(normals, mesh.normals);
+		swap(uvs, mesh.uvs);
 	}
 }

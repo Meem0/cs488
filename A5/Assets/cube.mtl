@@ -1,0 +1,3 @@
+newmtl mat
+map_Kd diffuse.dds
+bump normal.dds
