@@ -26,7 +26,7 @@ void main() {
 	float cosTheta = max( dot(normalView, l ), 0 );
 
 	vec4 texColour = texture(tex, fragTexCoord);
-	vec4 diffuse = vec4(colour * texColour.xyz * cosTheta, texColour.w);
+	vec4 diffuse = vec4(colour * texColour.xyz * cosTheta, texColour.a);
 
 	if (diffuse.a < 0.5) {
 		discard;
@@ -50,5 +50,5 @@ void main() {
 		}
     }
 
-	fragColor = vec4(ambientIntensity, 0) + vec4(lightColour, 1) * (diffuse + vec4(specular, 0));
+	fragColor = vec4(ambientIntensity, 0) * texColour + vec4(lightColour, 1) * (diffuse + vec4(specular, 0));
 }
