@@ -15,7 +15,12 @@ using namespace std;
 namespace Util {
 
 	void readFile(const std::string& path, vector<char>& buffer, bool binary) {
-		ifstream file(path, ios::in | (binary ? ios::binary : 0));
+		ios_base::openmode flags = ios::in;
+		if (binary) {
+			flags |= ios::binary;
+		}
+
+		ifstream file(path, flags);
 		file.seekg(0, ios::end);
 		streamoff len = file.tellg();
 		file.seekg(0, ios::beg);
@@ -108,7 +113,11 @@ namespace Util {
 
 		duration<double> timeSpan = duration_cast<duration<double>>(time - itr->second);
 
-		ofstream debugFile("log.txt", ios::out | (debugTimerFirstTime ? 0 : ios::app));
+		ios_base::openmode flags = ios::out;
+		if (debugTimerFirstTime) {
+			flags |= ios::app;
+		}
+		ofstream debugFile("log.txt", flags);
 		debugFile << message << " " << timeSpan.count() << endl;
 		debugTimerFirstTime = false;
 
