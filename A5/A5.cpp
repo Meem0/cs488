@@ -45,6 +45,7 @@ A5::A5()
 	, m_lightIntensity(1.0f)
 	, m_lightPosition(-100.0f, 50.0f, 0)
 	, m_shininess(0)
+	, m_normalDebug(false)
 {
 	m_terrainTileCountSlider = static_cast<float>(m_terrainTileCount);
 }
@@ -208,6 +209,29 @@ void A5::draw()
 
 	m_shader.disable();
 
+#if RENDER_DEBUG
+	if (m_normalDebug) {
+		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixf(value_ptr(m_projMat));
+		glMatrixMode(GL_MODELVIEW);
+		glm::mat4 MV = V * M;
+		glLoadMatrixf(value_ptr(MV));
+
+		glColor3f(0, 0, 1.0f);
+		glBegin(GL_LINES);
+
+		for (int i = 0; i < m_terrainVertices.size(); ++i) {
+			glm::vec3 p = m_terrainVertices[i];
+			glVertex3fv(&p.x);
+			glm::vec3 n = m_terrainNormals[i];
+			p += n;
+			glVertex3fv(&p.x);
+		}
+
+		glEnd();
+	}
+#endif
+
 	// Restore defaults
 	glBindVertexArray(0);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -367,6 +391,12 @@ bool A5::keyInputEvent (
 				m_wireframeMode = !m_wireframeMode;
 			}
 			break;
+
+		case GLFW_KEY_N:
+			if (press) {
+				m_normalDebug = !m_normalDebug;
+			}
+			break;
 		}
 	}
 
@@ -467,7 +497,12 @@ void A5::createTerrain()
 	noise.SetNoiseType(FastNoise::SimplexFractal);
 
 	const std::size_t terrainVertexCount = tilesVertexCount(m_terrainTileCount);
+#if RENDER_DEBUG
+	m_terrainVertices.resize(terrainVertexCount);
+	vector<vec3>& terrainVertices = m_terrainVertices;
+#else
 	vector<vec3> terrainVertices(terrainVertexCount);
+#endif
 
 	const std::size_t n = m_terrainTileCount + 1;
 	float tileWidth = m_terrainWidth / static_cast<float>(m_terrainTileCount);
@@ -489,7 +524,12 @@ void A5::createTerrain()
 		terrainVertices[i] = vec3(x, y, z);
 	}
 
+#if RENDER_DEBUG
+	m_terrainNormals.resize(terrainVertexCount);
+	vector<vec3>& terrainNormals = m_terrainNormals;
+#else
 	vector<vec3> terrainNormals(terrainVertexCount);
+#endif
 	for (std::size_t i = 0; i < terrainVertexCount; ++i) {
 		std::size_t row = i / n;
 		std::size_t col = i % n;

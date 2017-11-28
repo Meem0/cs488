@@ -84,6 +84,12 @@ private:
 	GLuint m_eboTerrain; // Element Buffer Object
 	GLuint m_terrainTexture;
 
+#if RENDER_DEBUG
+	std::vector<glm::vec3> m_terrainVertices;
+	std::vector<glm::vec3> m_terrainNormals;
+#endif
+	bool m_normalDebug;
+
 	glm::mat4 m_projMat;
 
 	Camera m_camera;
