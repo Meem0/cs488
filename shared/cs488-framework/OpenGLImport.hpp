@@ -5,5 +5,9 @@
 #elif defined __linux__
     #include <gl3w/GL/gl3w.h>
 #elif defined WIN32
+#if RENDER_DEBUG
+	#include <GL/glew.h>
+#else
     #include <gl3w/GL/gl3w.h>
+#endif
 #endif

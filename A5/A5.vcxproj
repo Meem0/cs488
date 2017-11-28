@@ -157,6 +157,7 @@
     <ClCompile Include="A5.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="FastNoise.cpp" />
+    <ClCompile Include="lib\glew.c" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ObjFileDecoder.cpp" />
     <ClCompile Include="TestCube.cpp" />

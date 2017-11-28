@@ -1,7 +1,7 @@
-#include "Window.hpp"
 #include "cs488-framework/Exception.hpp"
 #include "cs488-framework/OpenGLImport.hpp"
 
+#include "Window.hpp"
 #include "Utility.hpp"
 
 #include <sstream>
@@ -343,7 +343,13 @@ void Window::run (
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#if RENDER_DEBUG
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+#else
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
+
     glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
     glfwWindowHint(GLFW_SAMPLES, 0);
     glfwWindowHint(GLFW_RED_BITS, 8);
@@ -371,7 +377,15 @@ void Window::run (
 
     centerWindow();
     glfwMakeContextCurrent(m_window);
+
+#if RENDER_DEBUG
+	if (glewInit() != GLEW_OK) {
+		fprintf(stderr, "Call to glewInit failed.\n");
+		std::abort();
+	}
+#else
 	gl3wInit();
+#endif
     
 #ifdef DEBUG_GL
     printGLInfo();

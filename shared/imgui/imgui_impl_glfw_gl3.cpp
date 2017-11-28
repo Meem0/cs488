@@ -5,7 +5,7 @@
 #include "imgui_impl_glfw_gl3.h"
 
 // GL3W/GLFW
-#include <GL/gl3w.h>
+#include <cs488-framework/OpenGLImport.hpp>
 #include <GLFW/glfw3.h>
 #ifdef _WIN32
 #undef APIENTRY

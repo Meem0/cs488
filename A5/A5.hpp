@@ -2,9 +2,10 @@
 
 #define _USE_MATH_DEFINES
 
-#include "Window.hpp"
 #include "cs488-framework/OpenGLImport.hpp"
 #include "cs488-framework/ShaderProgram.hpp"
+
+#include "Window.hpp"
 
 #include <glm/glm.hpp>
 
