@@ -351,7 +351,7 @@ void Window::run (
 #endif
 
     glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
-    glfwWindowHint(GLFW_SAMPLES, 0);
+    glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_RED_BITS, 8);
     glfwWindowHint(GLFW_GREEN_BITS, 8);
     glfwWindowHint(GLFW_BLUE_BITS, 8);

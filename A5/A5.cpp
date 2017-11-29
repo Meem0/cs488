@@ -40,6 +40,7 @@ A5::A5()
 	, m_terrainTileCount(128)
 	, m_terrainWidth(128.0f)
 	, m_wireframeMode(false)
+	, m_multisample(false)
 	, m_heightScaleFactor(1.0f)
 	, m_movementSpeed(4.0f)
 	, m_lightIntensity(1.0f)
@@ -194,6 +195,13 @@ void A5::draw()
 	}
 	else {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+
+	if (m_multisample) {
+		glEnable(GL_MULTISAMPLE);
+	}
+	else {
+		glDisable(GL_MULTISAMPLE);
 	}
 
 	// draw the terrain
@@ -389,6 +397,12 @@ bool A5::keyInputEvent (
 		case GLFW_KEY_F:
 			if (press) {
 				m_wireframeMode = !m_wireframeMode;
+			}
+			break;
+
+		case GLFW_KEY_M:
+			if (press) {
+				m_multisample = !m_multisample;
 			}
 			break;
 

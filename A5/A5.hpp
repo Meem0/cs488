@@ -47,6 +47,7 @@ private:
 	bool m_showMouse;
 
 	bool m_wireframeMode;
+	bool m_multisample;
 
 	glm::vec3 m_lightPosition;
 	float m_lightIntensity;
