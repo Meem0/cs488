@@ -85,6 +85,16 @@ void A5::init()
 	m_uniformSpecularCoeff = m_shader.getUniformLocation("specularCoeff");
 	m_uniformShininess = m_shader.getUniformLocation("shininess");
 
+	m_skyboxShader.generateProgramObject();
+	m_skyboxShader.attachVertexShader(
+		Util::getAssetFilePath("SkyboxShader.vert").c_str());
+	m_skyboxShader.attachFragmentShader(
+		Util::getAssetFilePath("SkyboxShader.frag").c_str());
+	m_skyboxShader.link();
+
+	m_uniformSkyboxP = m_skyboxShader.getUniformLocation("P");
+	m_uniformSkyboxV = m_skyboxShader.getUniformLocation("V");
+
 	initGeom();
 	createTerrain();
 
@@ -239,6 +249,26 @@ void A5::draw()
 		glEnd();
 	}
 #endif
+
+
+	m_skyboxShader.enable();
+
+	glDepthFunc(GL_LEQUAL);
+	glCullFace(GL_FRONT);
+
+	mat4 skyboxV = mat4(mat3(V));
+	glUniformMatrix4fv(m_uniformSkyboxP, 1, GL_FALSE, value_ptr(m_projMat));
+	glUniformMatrix4fv(m_uniformSkyboxV, 1, GL_FALSE, value_ptr(skyboxV));
+
+	glBindVertexArray(m_vaoSkybox);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, m_skyboxCubemap);
+	glDrawElements(GL_TRIANGLES, m_skyboxIndexCount, GL_UNSIGNED_SHORT, nullptr);
+
+	glDepthFunc(GL_LESS);
+	glCullFace(GL_BACK);
+
+	m_skyboxShader.disable();
+
 
 	// Restore defaults
 	glBindVertexArray(0);
@@ -420,6 +450,39 @@ bool A5::keyInputEvent (
 void A5::initGeom()
 {
 	allocateTerrain();
+
+
+	vector<string> skyboxTexturePaths {
+		Util::getAssetFilePath("skybox/miramar_rt.dds"),
+		Util::getAssetFilePath("skybox/miramar_lf.dds"),
+		Util::getAssetFilePath("skybox/miramar_up.dds"),
+		Util::getAssetFilePath("skybox/miramar_dn.dds"),
+		Util::getAssetFilePath("skybox/miramar_bk.dds"),
+		Util::getAssetFilePath("skybox/miramar_ft.dds")
+	};
+	m_skyboxCubemap = Util::loadCubeMap(skyboxTexturePaths);
+
+	Mesh skyboxMesh;
+	ObjFileDecoder::decode(Util::getAssetFilePath("skybox.obj").c_str(), skyboxMesh);
+	m_skyboxIndexCount = skyboxMesh.faceData.size() * 3;
+
+	glGenVertexArrays(1, &m_vaoSkybox);
+	glBindVertexArray(m_vaoSkybox);
+
+	GLuint vboSkybox;
+	glGenBuffers(1, &vboSkybox);
+	glBindBuffer(GL_ARRAY_BUFFER, vboSkybox);
+	glBufferData(GL_ARRAY_BUFFER, skyboxMesh.positions.size() * sizeof(vec3), skyboxMesh.positions.data(), GL_STATIC_DRAW);
+
+	GLuint eboSkybox;
+	glGenBuffers(1, &eboSkybox);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboSkybox);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, skyboxMesh.faceData.size() * sizeof(FaceData), skyboxMesh.faceData.data(), GL_STATIC_DRAW);
+
+	GLint posAttrib = m_skyboxShader.getAttribLocation("position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
 
 	static const std::size_t TreeGridSideCount = 8;
 	const float TreeGridWidth = m_terrainWidth * 0.9f;

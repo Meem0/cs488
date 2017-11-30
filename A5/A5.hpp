@@ -85,6 +85,14 @@ private:
 	GLuint m_eboTerrain; // Element Buffer Object
 	GLuint m_terrainTexture;
 
+	ShaderProgram m_skyboxShader;
+	GLint m_uniformSkyboxP;
+	GLint m_uniformSkyboxV;
+
+	GLuint m_vaoSkybox;
+	GLuint m_skyboxCubemap;
+	std::size_t m_skyboxIndexCount;
+
 #if RENDER_DEBUG
 	std::vector<glm::vec3> m_terrainVertices;
 	std::vector<glm::vec3> m_terrainNormals;

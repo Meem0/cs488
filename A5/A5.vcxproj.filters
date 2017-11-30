@@ -118,5 +118,11 @@
     <None Include="Assets\VertexShader.vert">
       <Filter>Assets</Filter>
     </None>
+    <None Include="Assets\SkyboxShader.frag">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\SkyboxShader.vert">
+      <Filter>Assets</Filter>
+    </None>
   </ItemGroup>
 </Project>

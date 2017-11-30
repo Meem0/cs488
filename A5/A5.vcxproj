@@ -247,6 +247,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\FragmentShader.frag" />
+    <None Include="Assets\SkyboxShader.frag" />
+    <None Include="Assets\SkyboxShader.vert" />
     <None Include="Assets\VertexShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
