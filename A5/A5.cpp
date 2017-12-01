@@ -41,11 +41,11 @@ A5::A5()
 	, m_terrainWidth(128.0f)
 	, m_wireframeMode(false)
 	, m_multisample(false)
+	, m_useBumpMap(false)
 	, m_heightScaleFactor(1.0f)
 	, m_movementSpeed(4.0f)
 	, m_lightIntensity(1.0f)
 	, m_lightPosition(-100.0f, 50.0f, 0)
-	, m_shininess(0)
 	, m_normalDebug(false)
 {
 	m_terrainTileCountSlider = static_cast<float>(m_terrainTileCount);
@@ -82,8 +82,14 @@ void A5::init()
 	m_uniformColour = m_shader.getUniformLocation("colour");
 	m_uniformLightColour = m_shader.getUniformLocation("lightColour");
 	m_uniformAmbientIntensity = m_shader.getUniformLocation("ambientIntensity");
-	m_uniformSpecularCoeff = m_shader.getUniformLocation("specularCoeff");
-	m_uniformShininess = m_shader.getUniformLocation("shininess");
+	m_uniformUseBumpMap = m_shader.getUniformLocation("useBumpMap");
+
+	m_shader.enable();
+	GLint textureUniform = m_shader.getUniformLocation("tex");
+	glUniform1i(textureUniform, 0);
+	textureUniform = m_shader.getUniformLocation("bump");
+	glUniform1i(textureUniform, 1);
+	m_shader.disable();
 
 	m_skyboxShader.generateProgramObject();
 	m_skyboxShader.attachVertexShader(
@@ -162,11 +168,6 @@ void A5::guiLogic()
 		m_ambientIntensity.y = m_ambientIntensity.x;
 		m_ambientIntensity.z = m_ambientIntensity.x;
 	}
-	/*if (ImGui::SliderFloat("Specular coeff.", &m_specularCoeff.x, 0, 2.0f)) {
-		m_specularCoeff.y = m_specularCoeff.x;
-		m_specularCoeff.z = m_specularCoeff.x;
-	}
-	ImGui::SliderFloat("Shininess", &m_shininess, 0, 100.0f);*/
 
 	ImGui::End();
 }
@@ -197,8 +198,7 @@ void A5::draw()
 	glUniform3fv(m_uniformLightPosition, 1, value_ptr(m_lightPosition));
 	glUniform3fv(m_uniformLightColour, 1, value_ptr(lightColour));
 	glUniform3fv(m_uniformAmbientIntensity, 1, value_ptr(m_ambientIntensity));
-	glUniform3fv(m_uniformSpecularCoeff, 1, value_ptr(m_specularCoeff));
-	glUniform1f(m_uniformShininess, m_shininess);
+	glUniform1i(m_uniformUseBumpMap, m_useBumpMap);
 
 	if (m_wireframeMode) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -216,9 +216,16 @@ void A5::draw()
 
 	// draw the terrain
 	glBindVertexArray(m_vaoTerrain);
+
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_terrainTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_terrainBumpMap);
+
 	glUniform3f(m_uniformColour, 1.0f, 1.0f, 1.0f);
-	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_INT, nullptr);
+	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_SHORT, nullptr);
+
+	glActiveTexture(GL_TEXTURE0);
 
 	// draw the trees
 	for (auto& tree : m_trees) {
@@ -436,6 +443,12 @@ bool A5::keyInputEvent (
 			}
 			break;
 
+		case GLFW_KEY_B:
+			if (press) {
+				m_useBumpMap = !m_useBumpMap;
+			}
+			break;
+
 		case GLFW_KEY_N:
 			if (press) {
 				m_normalDebug = !m_normalDebug;
@@ -531,7 +544,7 @@ void A5::allocateTerrain()
 	// Create the terrain element buffer
 	glGenBuffers(1, &m_eboTerrain);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, maxIndexCount * sizeof(std::size_t), nullptr, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, maxIndexCount * sizeof(unsigned short), nullptr, GL_STATIC_DRAW);
 
 	// Specify the means of extracting the position values properly.
 	GLint posAttrib = m_shader.getAttribLocation("position");
@@ -548,6 +561,26 @@ void A5::allocateTerrain()
 	glEnableVertexAttribArray(normalAttrib);
 	glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
+	// Create the terrain uTangents vertex buffer
+	glGenBuffers(1, &m_vboTerrainuTangents);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainuTangents);
+	glBufferData(GL_ARRAY_BUFFER, maxVertexCount * sizeof(vec3), nullptr, GL_STATIC_DRAW);
+
+	// Specify the means of extracting the uTangent values properly.
+	GLint uTangentAttrib = m_shader.getAttribLocation("uTangent");
+	glEnableVertexAttribArray(uTangentAttrib);
+	glVertexAttribPointer(uTangentAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Create the terrain vTangents vertex buffer
+	glGenBuffers(1, &m_vboTerrainvTangents);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainvTangents);
+	glBufferData(GL_ARRAY_BUFFER, maxVertexCount * sizeof(vec3), nullptr, GL_STATIC_DRAW);
+
+	// Specify the means of extracting the vTangent values properly.
+	GLint vTangentAttrib = m_shader.getAttribLocation("vTangent");
+	glEnableVertexAttribArray(vTangentAttrib);
+	glVertexAttribPointer(vTangentAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
 	// Create the terrain texture coordinates vertex buffer
 	glGenBuffers(1, &m_vboTerrainTexCoords);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainTexCoords);
@@ -560,6 +593,8 @@ void A5::allocateTerrain()
 
 	// Create the texture
 	m_terrainTexture = Util::loadTexture(Util::getAssetFilePath("pineforest03.dds"));
+	// Create the bumpmap
+	m_terrainBumpMap = Util::loadTexture(Util::getAssetFilePath("pineforest03_n.dds"));
 
 	// Reset state
 	glBindVertexArray(0);
@@ -639,25 +674,33 @@ void A5::createTerrain()
 	}
 
 	const std::size_t terrainIndexCount = tilesIndexCount(m_terrainTileCount);
-	vector<std::size_t> terrainIndices(terrainIndexCount);
+
+	vector<FaceData> terrainIndices(terrainIndexCount / 3);
 	for (std::size_t tileIdx = 0; tileIdx < m_terrainTileCount * m_terrainTileCount; ++tileIdx) {
 		std::size_t row = tileIdx / m_terrainTileCount;
 		std::size_t col = tileIdx % m_terrainTileCount;
 
-		std::size_t a, b, c, d;
+		unsigned short a, b, c, d;
 		a = row * n + col;
 		b = a + 1;
 		c = b + n - 1;
 		d = c + 1;
 
-		std::size_t idx = tileIdx * 6;
-		terrainIndices[idx++] = a;
-		terrainIndices[idx++] = c;
-		terrainIndices[idx++] = b;
-		terrainIndices[idx++] = b;
-		terrainIndices[idx++] = c;
-		terrainIndices[idx++] = d;
+		std::size_t idx = tileIdx * 2;
+		terrainIndices[idx].v1 = a;
+		terrainIndices[idx].v2 = c;
+		terrainIndices[idx].v3 = b;
+
+		++idx;
+
+		terrainIndices[idx].v1 = b;
+		terrainIndices[idx].v2 = c;
+		terrainIndices[idx].v3 = d;
 	}
+
+	vector<vec3> terrainuTangents;
+	vector<vec3> terrainvTangents;
+	Util::calculateTangents(terrainVertices, terrainTexCoords, terrainIndices, terrainuTangents, terrainvTangents);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrain);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainVertices.data());
@@ -667,12 +710,20 @@ void A5::createTerrain()
 	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainNormals.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainuTangents);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainuTangents.data());
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainvTangents);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainvTangents.data());
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainTexCoords);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec2), terrainTexCoords.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, terrainIndexCount * sizeof(std::size_t), terrainIndices.data());
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, terrainIndices.size() * sizeof(FaceData), terrainIndices.data());
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 

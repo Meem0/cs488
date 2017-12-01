@@ -20,16 +20,19 @@ void Tree::loadModel(const ShaderProgram& shader, const Mesh& mesh) {
 	m_uniformM = shader.getUniformLocation("M");
 
 	for (size_t i = 0; i < mesh.groupData.size(); ++i) {
-		GLuint textureID;
 		// Create the texture
-		textureID = Util::loadTexture(Util::getAssetFilePath(mesh.groupData[i].diffuseMap.c_str()));
+		GLuint textureID = Util::loadTexture(Util::getAssetFilePath(mesh.groupData[i].diffuseMap.c_str()));
+
+		// Create the bumpmap
+		GLuint bumpMapID = Util::loadTexture(Util::getAssetFilePath(mesh.groupData[i].bumpMap.c_str()));
 
 		size_t startIndex = mesh.groupData[i].startIndex;
 		size_t endIndex = (i + 1 < mesh.groupData.size()) ? mesh.groupData[i + 1].startIndex : mesh.faceData.size();
 
 		m_meshGroups.push_back({
 			(endIndex - startIndex) * 3,
-			textureID
+			textureID,
+			bumpMapID
 		});
 	}
 
@@ -58,6 +61,28 @@ void Tree::loadModel(const ShaderProgram& shader, const Mesh& mesh) {
 	GLint normalAttrib = shader.getAttribLocation("normal");
 	glEnableVertexAttribArray(normalAttrib);
 	glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Create the uTangents vertex buffer
+	GLuint vboUTangents;
+	glGenBuffers(1, &vboUTangents);
+	glBindBuffer(GL_ARRAY_BUFFER, vboUTangents);
+	glBufferData(GL_ARRAY_BUFFER, mesh.uTangents.size() * sizeof(vec3), mesh.uTangents.data(), GL_STATIC_DRAW);
+
+	// Specify the means of extracting the uTangent values properly.
+	GLint uTangentAttrib = shader.getAttribLocation("uTangent");
+	glEnableVertexAttribArray(uTangentAttrib);
+	glVertexAttribPointer(uTangentAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	// Create the vTangents vertex buffer
+	GLuint vboVTangents;
+	glGenBuffers(1, &vboVTangents);
+	glBindBuffer(GL_ARRAY_BUFFER, vboVTangents);
+	glBufferData(GL_ARRAY_BUFFER, mesh.vTangents.size() * sizeof(vec3), mesh.vTangents.data(), GL_STATIC_DRAW);
+
+	// Specify the means of extracting the vTangent values properly.
+	GLint vTangentAttrib = shader.getAttribLocation("vTangent");
+	glEnableVertexAttribArray(vTangentAttrib);
+	glVertexAttribPointer(vTangentAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
 	// Create the Tree texture coordinates vertex buffer
 	GLuint vboUVs;
@@ -102,7 +127,12 @@ void Tree::draw()
 	size_t currentIndex = 0;
 	glBindVertexArray(m_vao);
 	for (const auto& group : m_meshGroups) {
-		glBindTexture(GL_TEXTURE_2D, group.texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, group.diffuse);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, group.bumpmap);
+
 		glDrawElements(
 			GL_TRIANGLES,
 			group.indexCount,
@@ -113,5 +143,8 @@ void Tree::draw()
 		currentIndex += group.indexCount;
 	}
 
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindVertexArray(0);
 	glEnable(GL_CULL_FACE);
 }

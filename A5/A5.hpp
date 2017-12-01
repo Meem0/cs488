@@ -48,6 +48,7 @@ private:
 
 	bool m_wireframeMode;
 	bool m_multisample;
+	bool m_useBumpMap;
 
 	glm::vec3 m_lightPosition;
 	float m_lightIntensity;
@@ -75,15 +76,17 @@ private:
 	GLint m_uniformLightPosition;
 	GLint m_uniformLightColour;
 	GLint m_uniformAmbientIntensity;
-	GLint m_uniformSpecularCoeff;
-	GLint m_uniformShininess;
+	GLint m_uniformUseBumpMap;
 
 	GLuint m_vaoTerrain; // Vertex Array Object
 	GLuint m_vboTerrain; // Vertex Buffer Object
 	GLuint m_vboTerrainNormals; // Vertex Buffer Object
+	GLuint m_vboTerrainuTangents; // Vertex Buffer Object
+	GLuint m_vboTerrainvTangents; // Vertex Buffer Object
 	GLuint m_vboTerrainTexCoords; // Vertex Buffer Object
 	GLuint m_eboTerrain; // Element Buffer Object
 	GLuint m_terrainTexture;
+	GLuint m_terrainBumpMap;
 
 	ShaderProgram m_skyboxShader;
 	GLint m_uniformSkyboxP;

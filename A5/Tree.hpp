@@ -26,7 +26,8 @@ private:
 
 	struct GroupInfo {
 		std::size_t indexCount;
-		GLuint texture;
+		GLuint diffuse;
+		GLuint bumpmap;
 	};
 
 	GLuint m_vao; // Vertex Array Object

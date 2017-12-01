@@ -1,5 +1,7 @@
 #include "Utility.hpp"
 
+#include "ObjFileDecoder.hpp"
+
 #include <cassert>
 #include <chrono>
 #include <fstream>
@@ -10,6 +12,7 @@
 #define GLIML_NO_KTX 1
 #include <gliml/gliml.h>
 
+using namespace glm;
 using namespace std;
 
 namespace Util {
@@ -110,6 +113,47 @@ namespace Util {
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 		return textureID;
+	}
+
+	void calculateTangents(
+		const vector<vec3>& positions,
+		const vector<vec2>& uvs,
+		const vector<FaceData>& faces,
+		vector<vec3>& uTangents,
+		vector<vec3>& vTangents
+	) {
+		assert(positions.size() == uvs.size());
+
+		uTangents.resize(positions.size());
+		vTangents.resize(positions.size());
+
+		for (const auto& face : faces) {
+			const vec3& v1 = positions[face.v1];
+			const vec3& v2 = positions[face.v2];
+			const vec3& v3 = positions[face.v3];
+
+			const vec2& vt1 = uvs[face.v1];
+			const vec2& vt2 = uvs[face.v2];
+			const vec2& vt3 = uvs[face.v3];
+
+			vec3 deltaPos1 = v2 - v1;
+			vec3 deltaPos2 = v3 - v1;
+
+			vec2 deltaUV1 = vt2 - vt1;
+			vec2 deltaUV2 = vt3 - vt1;
+
+			float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+			vec3 uTangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y)*r;
+			vec3 vTangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x)*r;
+
+			uTangents[face.v1] = uTangent;
+			uTangents[face.v2] = uTangent;
+			uTangents[face.v3] = uTangent;
+
+			vTangents[face.v1] = vTangent;
+			vTangents[face.v2] = vTangent;
+			vTangents[face.v3] = vTangent;
+		}
 	}
 
 	string assetFilePathBase;

@@ -1,7 +1,11 @@
 #include "cs488-framework/OpenGLImport.hpp"
 
+#include <glm/glm.hpp>
+
 #include <vector>
 #include <string>
+
+struct FaceData;
 
 namespace Util {
 	void readFile(const std::string& path, std::vector<char>& buffer, bool binary = false);
@@ -9,6 +13,14 @@ namespace Util {
 	GLuint loadTexture(const std::string& texturePath);
 	// order: right, left, top, bottom, back, front
 	GLuint loadCubeMap(const std::vector<std::string>& texturePaths);
+
+	void calculateTangents(
+		const std::vector<glm::vec3>& positions,
+		const std::vector<glm::vec2>& uvs,
+		const std::vector<FaceData>& faces,
+		std::vector<glm::vec3>& uTangents,
+		std::vector<glm::vec3>& vTangents
+	);
 
 	//std::string getAssetFilePath(const char* filename);
 	std::string getAssetFilePath(const std::string& filename);

@@ -322,4 +322,6 @@ void ObjFileDecoder::decode(const char* objFilePath, Mesh& mesh)
 		swap(normals, mesh.normals);
 		swap(uvs, mesh.uvs);
 	}
+
+	Util::calculateTangents(mesh.positions, mesh.uvs, mesh.faceData, mesh.uTangents, mesh.vTangents);
 }
