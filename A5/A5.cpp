@@ -510,6 +510,8 @@ void A5::initGeom()
 		m_trees.back().loadModel(m_shader, treeMesh);
 		m_trees.back().setWorldPosition(pos);
 	}
+
+	CHECK_GL_ERRORS;
 }
 
 void A5::allocateTerrain()
