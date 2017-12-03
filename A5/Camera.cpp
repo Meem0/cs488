@@ -13,6 +13,7 @@ Camera::Camera()
 	: m_needToRecalculateViewMatrix(true)
 	, m_directionPressed{ false, false, false, false }
 	, m_speed(4.0f)
+	, m_2dWalkMode(true)
 {
 }
 
@@ -43,7 +44,10 @@ void Camera::update(double deltaTime)
 
 	if (x != 0 || z != 0) {
 		quat lookDir = glm::angleAxis(-m_angle.x, vec3(0, 1.0f, 0));
-		lookDir = glm::rotate(lookDir, -m_angle.y, vec3(1.0f, 0, 0));
+
+		if (!m_2dWalkMode) {
+			lookDir = glm::rotate(lookDir, -m_angle.y, vec3(1.0f, 0, 0));
+		}
 
 		float speed = static_cast<float>(m_speed * deltaTime);
 		float fx = static_cast<float>(x);
@@ -53,6 +57,14 @@ void Camera::update(double deltaTime)
 
 		moveTo(m_position + moveVec);
 	}
+}
+
+vec3 Camera::getPosition() const {
+	return m_position;
+}
+
+bool Camera::get2dWalkMode() const {
+	return m_2dWalkMode;
 }
 
 void Camera::moveTo(glm::vec3 pos)
@@ -76,6 +88,10 @@ void Camera::rotate(glm::vec2 angleDelta)
 void Camera::setSpeed(float speed)
 {
 	m_speed = speed;
+}
+
+void Camera::set2dWalkMode(bool use2dWalkMode) {
+	m_2dWalkMode = use2dWalkMode;
 }
 
 void Camera::setDirectionPressed(Direction dir, bool pressed)

@@ -96,8 +96,8 @@ private:
 	GLuint m_skyboxCubemap;
 	std::size_t m_skyboxIndexCount;
 
-#if RENDER_DEBUG
 	std::vector<glm::vec3> m_terrainVertices;
+#if RENDER_DEBUG
 	std::vector<glm::vec3> m_terrainNormals;
 #endif
 	bool m_normalDebug;

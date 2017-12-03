@@ -29,6 +29,58 @@ namespace {
 	{
 		return tileCount * tileCount * 2 * 3;
 	}
+
+	float getTerrainHeight(const vector<vec3>& terrainVertices, size_t numTiles, float terrainWidth, vec2 pos) {
+		vec2 posPercent = (pos + terrainWidth / 2.0f) / terrainWidth;
+		posPercent = glm::clamp(posPercent, vec2(), vec2(1.0f, 1.0f));
+
+		vec2 posIdxHigh = glm::ceil(posPercent * static_cast<float>(numTiles));
+		vec2 posIdxLow = glm::floor(posPercent * static_cast<float>(numTiles));
+
+		size_t rowU = static_cast<size_t>(posIdxLow.y);
+		size_t rowD = static_cast<size_t>(posIdxHigh.y);
+		size_t colL = static_cast<size_t>(posIdxLow.x);
+		size_t colR = static_cast<size_t>(posIdxHigh.x);
+
+		// vertices of the current square
+		vec3 vul = terrainVertices[rowU * (numTiles + 1) + colL];
+		const vec3& vdl = terrainVertices[rowD * (numTiles + 1) + colL];
+		const vec3& vur = terrainVertices[rowU * (numTiles + 1) + colR];
+		vec3 vdr = terrainVertices[rowD * (numTiles + 1) + colR];
+
+		assert(vul.x - vdl.x < 0.0001f);
+		assert(vul.z - vur.z < 0.0001f);
+		assert(vdr.x - vur.x < 0.0001f);
+		assert(vdr.z - vdl.z < 0.0001f);
+
+		if (rowU != rowD || colL != colR) {
+			// squared distances to hypotenuse vertices
+			float dul = (pos.x - vul.x) * (pos.x - vul.x) + (pos.y - vul.z) * (pos.y - vul.z);
+			float ddr = (pos.x - vdr.x) * (pos.x - vdr.x) + (pos.y - vdr.z) * (pos.y - vdr.z);
+
+			vec3 mid = (vur + vdl) / 2.0f;
+			vec3 vh = dul < ddr ? vul : vdr;
+			vec3& vo = dul < ddr ? vdr : vul;
+			vec3 d = mid - vh;
+			// possible that tile is flat in x or z dimension, when we are off the grid
+			float k = (abs(vo.x - vh.x) > abs(vo.z - vh.z)) ?
+				(vo.x - vh.x) / d.x :
+				(vo.z - vh.z) / d.z;
+			vo.y = vh.y + k * d.y;
+		}
+
+		vec2 tilePosPercent(
+			(pos.x - vul.x) / (vur.x - vul.x),
+			(pos.y - vul.z) / (vdl.z - vul.z)
+		);
+		tilePosPercent = glm::clamp(tilePosPercent, vec2(), vec2(1.0f, 1.0f));
+
+		float hl = vdl.y * tilePosPercent.y + vul.y * (1.0f - tilePosPercent.y);
+		float hr = vdr.y * tilePosPercent.y + vur.y * (1.0f - tilePosPercent.y);
+		float h = hr * tilePosPercent.x + hl * (1.0f - tilePosPercent.x);
+
+		return h;
+	}
 }
 
 //----------------------------------------------------------------------------------------
@@ -126,6 +178,13 @@ void A5::init()
 void A5::appLogic()
 {
 	m_camera.update(m_deltaTime);
+
+	if (m_camera.get2dWalkMode()) {
+		vec3 pos = m_camera.getPosition();
+		pos.y = getTerrainHeight(m_terrainVertices, m_terrainTileCount, m_terrainWidth, vec2(pos.x, pos.z));
+		pos.y += 1.0f;
+		m_camera.moveTo(pos);
+	}
 }
 
 //----------------------------------------------------------------------------------------
@@ -144,6 +203,11 @@ void A5::guiLogic()
 		glfwSetWindowShouldClose(m_window, GL_TRUE);
 	}
 	ImGui::Text("Framerate: %.1f FPS", ImGui::GetIO().Framerate);
+
+	vec3 pos(m_camera.getPosition());
+	ImGui::Text("Position: (%.1f, %.1f, %.1f)", pos.x, pos.y, pos.z);
+	float height = getTerrainHeight(m_terrainVertices, m_terrainTileCount, m_terrainWidth, vec2(pos.x, pos.z));
+	ImGui::Text("Height: %.2f", height);
 
 	if (ImGui::SliderFloat("Movement speed", &m_movementSpeed, 0.5f, 100.0f, "%.3f", 2.0f)) {
 		m_camera.setSpeed(m_movementSpeed);
@@ -428,6 +492,12 @@ bool A5::keyInputEvent (
 			m_camera.setDirectionPressed(Camera::Direction::RIGHT, press);
 			break;
 
+		case GLFW_KEY_C:
+			if (press) {
+				m_camera.set2dWalkMode(!m_camera.get2dWalkMode());
+			}
+			break;
+
 		case GLFW_KEY_ESCAPE:
 			if (press) {
 				setShowMouse(!m_showMouse);
@@ -614,12 +684,7 @@ void A5::createTerrain()
 	noise.SetNoiseType(FastNoise::SimplexFractal);
 
 	const std::size_t terrainVertexCount = tilesVertexCount(m_terrainTileCount);
-#if RENDER_DEBUG
 	m_terrainVertices.resize(terrainVertexCount);
-	vector<vec3>& terrainVertices = m_terrainVertices;
-#else
-	vector<vec3> terrainVertices(terrainVertexCount);
-#endif
 
 	const std::size_t n = m_terrainTileCount + 1;
 	float tileWidth = m_terrainWidth / static_cast<float>(m_terrainTileCount);
@@ -638,7 +703,7 @@ void A5::createTerrain()
 		int noiseY = static_cast<int>(static_cast<float>(MaxTiles) * static_cast<float>(col) / static_cast<float>(n));
 		float y = m_heightScaleFactor * noise.GetNoise(noiseX, noiseY);
 
-		terrainVertices[i] = vec3(x, y, z);
+		m_terrainVertices[i] = vec3(x, y, z);
 	}
 
 #if RENDER_DEBUG
@@ -654,19 +719,19 @@ void A5::createTerrain()
 		std::size_t row2, col2;
 		vec3 l, r, u, d, o;
 
-		o = terrainVertices[row * n + col];
+		o = m_terrainVertices[row * n + col];
 
 		row2 = row == 0 ? row : row - 1;
-		u = terrainVertices[row2 * n + col] - o;
+		u = m_terrainVertices[row2 * n + col] - o;
 
 		row2 = row == n - 1 ? row : row + 1;
-		d = terrainVertices[row2 * n + col] - o;
+		d = m_terrainVertices[row2 * n + col] - o;
 
 		col2 = col == 0 ? col : col - 1;
-		l = terrainVertices[row * n + col2] - o;
+		l = m_terrainVertices[row * n + col2] - o;
 
 		col2 = col == n - 1 ? col : col + 1;
-		r = terrainVertices[row * n + col2] - o;
+		r = m_terrainVertices[row * n + col2] - o;
 
 		vec3 v1 = (d == vec3() || r == vec3()) ? vec3() : glm::normalize(glm::cross(d, r));
 		vec3 v2 = (r == vec3() || u == vec3()) ? vec3() : glm::normalize(glm::cross(r, u));
@@ -680,8 +745,8 @@ void A5::createTerrain()
 
 	vector<vec2> terrainTexCoords(terrainVertexCount);
 	for (std::size_t i = 0; i < terrainVertexCount; ++i) {
-		terrainTexCoords[i].s = terrainVertices[i].x;
-		terrainTexCoords[i].t = terrainVertices[i].z;
+		terrainTexCoords[i].s = m_terrainVertices[i].x;
+		terrainTexCoords[i].t = m_terrainVertices[i].z;
 	}
 
 	const std::size_t terrainIndexCount = tilesIndexCount(m_terrainTileCount);
@@ -711,10 +776,10 @@ void A5::createTerrain()
 
 	vector<vec3> terrainuTangents;
 	vector<vec3> terrainvTangents;
-	Util::calculateTangents(terrainVertices, terrainTexCoords, terrainIndices, terrainuTangents, terrainvTangents);
+	Util::calculateTangents(m_terrainVertices, terrainTexCoords, terrainIndices, terrainuTangents, terrainvTangents);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrain);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), terrainVertices.data());
+	glBufferSubData(GL_ARRAY_BUFFER, 0, terrainVertexCount * sizeof(vec3), m_terrainVertices.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboTerrainNormals);
