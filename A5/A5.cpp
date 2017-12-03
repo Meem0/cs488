@@ -186,6 +186,9 @@ void A5::draw()
 	vec3 lightColour(1.0f, 1.0f, 1.0f);
 	lightColour *= m_lightIntensity;
 
+	// w = 0 for directional light
+	vec4 lightPosition4(m_lightPosition, 0);
+
 	m_shader.enable();
 	glEnable(GL_DEPTH_TEST);
 
@@ -195,7 +198,7 @@ void A5::draw()
 	glUniformMatrix4fv(m_uniformP, 1, GL_FALSE, value_ptr(m_projMat));
 	glUniformMatrix4fv(m_uniformV, 1, GL_FALSE, value_ptr(V));
 	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
-	glUniform3fv(m_uniformLightPosition, 1, value_ptr(m_lightPosition));
+	glUniform4fv(m_uniformLightPosition, 1, value_ptr(lightPosition4));
 	glUniform3fv(m_uniformLightColour, 1, value_ptr(lightColour));
 	glUniform3fv(m_uniformAmbientIntensity, 1, value_ptr(m_ambientIntensity));
 	glUniform1i(m_uniformUseBumpMap, m_useBumpMap);
