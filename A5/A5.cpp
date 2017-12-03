@@ -321,6 +321,10 @@ void A5::draw()
 		}
 
 		glEnd();
+
+		for (auto& collider : m_colliders) {
+			collider.debugDraw();
+		}
 	}
 #endif
 
@@ -595,6 +599,8 @@ void A5::initGeom()
 		m_trees.emplace_back();
 		m_trees.back().loadModel(m_shader, treeMesh);
 		m_trees.back().setWorldPosition(pos);
+
+		m_colliders.emplace_back(vec2(pos.x, pos.z), 1.5f);
 	}
 
 	CHECK_GL_ERRORS;

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "Camera.hpp"
+#include "Collider.h"
 #include "Tree.hpp"
 
 class A5 : public Window {
@@ -106,4 +107,5 @@ private:
 
 	Camera m_camera;
 	std::vector<Tree> m_trees;
+	std::vector<Collider> m_colliders;
 };
