@@ -649,21 +649,29 @@ void A5::createTerrain()
 		std::size_t col = i % n;
 
 		std::size_t row2, col2;
-		float hl, hr, hu, hd;
+		vec3 l, r, u, d, o;
+
+		o = terrainVertices[row * n + col];
 
 		row2 = row == 0 ? row : row - 1;
-		hl = terrainVertices[row2 * n + col].y;
+		u = terrainVertices[row2 * n + col] - o;
 
 		row2 = row == n - 1 ? row : row + 1;
-		hr = terrainVertices[row2 * n + col].y;
+		d = terrainVertices[row2 * n + col] - o;
 
 		col2 = col == 0 ? col : col - 1;
-		hu = terrainVertices[row * n + col2].y;
+		l = terrainVertices[row * n + col2] - o;
 
 		col2 = col == n - 1 ? col : col + 1;
-		hd = terrainVertices[row * n + col2].y;
+		r = terrainVertices[row * n + col2] - o;
 
-		vec3 normal(hl - hr, 2.0f, hd - hu);
+		vec3 v1 = (d == vec3() || r == vec3()) ? vec3() : glm::normalize(glm::cross(d, r));
+		vec3 v2 = (r == vec3() || u == vec3()) ? vec3() : glm::normalize(glm::cross(r, u));
+		vec3 v3 = (u == vec3() || l == vec3()) ? vec3() : glm::normalize(glm::cross(u, l));
+		vec3 v4 = (l == vec3() || d == vec3()) ? vec3() : glm::normalize(glm::cross(l, d));
+
+		vec3 normal = vec3(v1 + v2 + v3 + v4);
+
 		terrainNormals[i] = glm::normalize(normal);
 	}
 
