@@ -9,6 +9,7 @@
 
 #include <glm/glm.hpp>
 
+#include <functional>
 #include <vector>
 
 #include "Camera.hpp"
@@ -43,6 +44,9 @@ private:
 	void initGeom();
 	void allocateTerrain();
 	void createTerrain();
+	void createTerrainGeometry(std::function<float(float, float)> heightFunction);
+
+	float getTerrainHeight(glm::vec2 pos) const;
 
 	void drawTerrain();
 	void drawTrees(GLint uniformM);

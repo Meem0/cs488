@@ -13,6 +13,7 @@ using namespace glm;
 using namespace std;
 
 Tree::Tree()
+	: m_needToRecalculateModelMatrix(true)
 {
 }
 
@@ -111,14 +112,20 @@ void Tree::loadModel(const ShaderProgram& shader, const Mesh& mesh) {
 	CHECK_GL_ERRORS;
 }
 
+glm::vec3 Tree::getWorldPosition() const
+{
+	return m_worldPosition;
+}
+
 void Tree::setWorldPosition(const vec3& position)
 {
-	m_modelMat = glm::translate(mat4(), position);
+	m_worldPosition = position;
+	m_needToRecalculateModelMatrix = true;
 }
 
 void Tree::draw(GLint uniformM)
 {
-	glUniformMatrix4fv(uniformM, 1, GL_FALSE, value_ptr(m_modelMat));
+	glUniformMatrix4fv(uniformM, 1, GL_FALSE, value_ptr(getModelMatrix()));
 
 	glDisable(GL_CULL_FACE);
 
@@ -145,4 +152,13 @@ void Tree::draw(GLint uniformM)
 	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(0);
 	glEnable(GL_CULL_FACE);
+}
+
+const mat4& Tree::getModelMatrix()
+{
+	if (m_needToRecalculateModelMatrix) {
+		m_needToRecalculateModelMatrix = false;
+		m_modelMat = glm::translate(mat4(), m_worldPosition);
+	}
+	return m_modelMat;
 }

@@ -16,12 +16,17 @@ public:
 
 	void loadModel(const ShaderProgram& shader, const Mesh& mesh);
 
+	glm::vec3 getWorldPosition() const;
 	void setWorldPosition(const glm::vec3& pos);
 
 	void draw(GLint uniformM);
 
 private:
+	glm::vec3 m_worldPosition;
 	glm::mat4 m_modelMat;
+	bool m_needToRecalculateModelMatrix;
+
+	const glm::mat4& getModelMatrix();
 
 	struct GroupInfo {
 		std::size_t indexCount;

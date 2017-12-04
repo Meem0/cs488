@@ -283,7 +283,7 @@ void A5::appLogic()
 			pos.z = midPos.y;
 		}
 
-		pos.y = getTerrainHeight(m_terrainVertices, m_terrainTileCount, m_terrainWidth, vec2(pos.x, pos.z));
+		pos.y = getTerrainHeight(vec2(pos.x, pos.z));
 		pos.y += 1.0f;
 
 		m_camera.moveTo(pos);
@@ -309,7 +309,7 @@ void A5::guiLogic()
 
 	vec3 pos(m_camera.getPosition());
 	ImGui::Text("Position: (%.1f, %.1f, %.1f)", pos.x, pos.y, pos.z);
-	float height = getTerrainHeight(m_terrainVertices, m_terrainTileCount, m_terrainWidth, vec2(pos.x, pos.z));
+	float height = getTerrainHeight(vec2(pos.x, pos.z));
 	ImGui::Text("Height: %.2f", height);
 
 	if (ImGui::SliderFloat("Movement speed", &m_movementSpeed, 0.5f, 100.0f, "%.3f", 2.0f)) {
@@ -816,6 +816,17 @@ void A5::createTerrain()
 	noise.SetSeed(20171111);
 	noise.SetNoiseType(FastNoise::SimplexFractal);
 
+	createTerrainGeometry([noise](float x, float y) { return noise.GetNoise(x, y); });
+
+	for (Tree& tree : m_trees) {
+		vec3 pos = tree.getWorldPosition();
+		pos.y = getTerrainHeight(vec2(pos.x, pos.z));
+		tree.setWorldPosition(pos);
+	}
+}
+
+void A5::createTerrainGeometry(function<float(float, float)> heightFunction)
+{
 	const uint32_t terrainVertexCount = tilesVertexCount(m_terrainTileCount);
 	m_terrainVertices.resize(terrainVertexCount);
 
@@ -834,7 +845,7 @@ void A5::createTerrain()
 
 		float noiseX = static_cast<float>(MaxTiles) * static_cast<float>(row) / static_cast<float>(n);
 		float noiseY = static_cast<float>(MaxTiles) * static_cast<float>(col) / static_cast<float>(n);
-		float y = m_heightScaleFactor * noise.GetNoise(noiseX, noiseY);
+		float y = m_heightScaleFactor * heightFunction(noiseX, noiseY);
 
 		m_terrainVertices[i] = vec3(x, y, z);
 	}
@@ -934,6 +945,11 @@ void A5::createTerrain()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, terrainIndices.size() * sizeof(FaceData32), terrainIndices.data());
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+float A5::getTerrainHeight(glm::vec2 pos) const
+{
+	return ::getTerrainHeight(m_terrainVertices, m_terrainTileCount, m_terrainWidth, pos);
 }
 
 void A5::drawTerrain()
