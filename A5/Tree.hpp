@@ -18,10 +18,9 @@ public:
 
 	void setWorldPosition(const glm::vec3& pos);
 
-	void draw();
+	void draw(GLint uniformM);
 
 private:
-	GLint m_uniformM;
 	glm::mat4 m_modelMat;
 
 	struct GroupInfo {

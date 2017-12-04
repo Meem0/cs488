@@ -130,5 +130,17 @@
     <None Include="Assets\SkyboxShader.vert">
       <Filter>Assets</Filter>
     </None>
+    <None Include="Assets\DebugQuad.frag">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\DepthShader.frag">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\DebugQuad.vert">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\DepthShader.vert">
+      <Filter>Assets</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -99,6 +99,7 @@ A5::A5()
 	, m_movementSpeed(4.0f)
 	, m_lightIntensity(1.0f)
 	, m_lightPosition(-100.0f, 50.0f, 0)
+	, m_renderDebugQuad(false)
 	, m_normalDebug(false)
 {
 	m_terrainTileCountSlider = static_cast<float>(m_terrainTileCount);
@@ -116,9 +117,6 @@ A5::~A5()
  */
 void A5::init()
 {
-	// Set the background colour.
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-
 	// Build the shader
 	m_shader.generateProgramObject();
 	m_shader.attachVertexShader(
@@ -153,6 +151,84 @@ void A5::init()
 
 	m_uniformSkyboxP = m_skyboxShader.getUniformLocation("P");
 	m_uniformSkyboxV = m_skyboxShader.getUniformLocation("V");
+
+
+	m_depthShader.generateProgramObject();
+	m_depthShader.attachVertexShader(
+		Util::getAssetFilePath("DepthShader.vert").c_str());
+	m_depthShader.attachFragmentShader(
+		Util::getAssetFilePath("DepthShader.frag").c_str());
+	m_depthShader.link();
+
+	m_uniformDepthM = m_depthShader.getUniformLocation("M");
+	m_uniformDepthLightSpaceMatrix = m_depthShader.getUniformLocation("lightSpaceMatrix");
+
+	glGenFramebuffers(1, &m_depthBuffer);
+	glGenTextures(1, &m_depthMap);
+
+	glBindTexture(GL_TEXTURE_2D, m_depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, ShadowWidth, ShadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_depthBuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	CHECK_GL_ERRORS;
+
+
+	m_debugQuadShader.generateProgramObject();
+	m_debugQuadShader.attachVertexShader(
+		Util::getAssetFilePath("DebugQuad.vert").c_str());
+	m_debugQuadShader.attachFragmentShader(
+		Util::getAssetFilePath("DebugQuad.frag").c_str());
+	m_debugQuadShader.link();
+
+	m_debugQuadShader.enable();
+	GLint debugQuadTextureUniform = m_debugQuadShader.getUniformLocation("tex");
+	glUniform1i(debugQuadTextureUniform, 0);
+	m_debugQuadShader.disable();
+
+	glGenVertexArrays(1, &m_vaoDebugQuad);
+	glBindVertexArray(m_vaoDebugQuad);
+
+	CHECK_GL_ERRORS;
+
+	float debugQuadVertices[] = {
+		// positions   // texCoords
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		-1.0f, -1.0f,  0.0f, 0.0f,
+		1.0f, -1.0f,  1.0f, 0.0f,
+
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		1.0f, -1.0f,  1.0f, 0.0f,
+		1.0f,  1.0f,  1.0f, 1.0f
+	};
+
+	GLuint vboDebugQuad;
+	glGenBuffers(1, &vboDebugQuad);
+	glBindBuffer(GL_ARRAY_BUFFER, vboDebugQuad);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(debugQuadVertices), debugQuadVertices, GL_STATIC_DRAW);
+
+	GLint posAttrib = m_debugQuadShader.getAttribLocation("position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+
+	GLint uvAttrib = m_debugQuadShader.getAttribLocation("texCoord");
+	glEnableVertexAttribArray(uvAttrib);
+	CHECK_GL_ERRORS;
+	glVertexAttribPointer(uvAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+	glBindVertexArray(0);
+
+	CHECK_GL_ERRORS;
+
 
 	initGeom();
 	createTerrain();
@@ -264,6 +340,28 @@ void A5::guiLogic()
  */
 void A5::draw()
 {
+	if (m_renderDebugQuad) {
+		glEnable(GL_DEPTH_TEST);
+
+		renderDepthBuffer();
+
+		m_debugQuadShader.enable();
+
+		glBindVertexArray(m_vaoDebugQuad);
+		glBindTexture(GL_TEXTURE_2D, m_depthMap);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+		CHECK_GL_ERRORS;
+
+		m_debugQuadShader.disable();
+
+		return;
+	}
+
+	// Set the background colour.
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
 	// Create a global transformation for the model (centre it).
 	mat4 M;
 
@@ -288,6 +386,7 @@ void A5::draw()
 	glUniform3fv(m_uniformLightColour, 1, value_ptr(lightColour));
 	glUniform3fv(m_uniformAmbientIntensity, 1, value_ptr(m_ambientIntensity));
 	glUniform1i(m_uniformUseBumpMap, m_useBumpMap);
+	glUniform3f(m_uniformColour, 1.0f, 1.0f, 1.0f);
 
 	if (m_wireframeMode) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -303,23 +402,8 @@ void A5::draw()
 		glDisable(GL_MULTISAMPLE);
 	}
 
-	// draw the terrain
-	glBindVertexArray(m_vaoTerrain);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_terrainTexture);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, m_terrainBumpMap);
-
-	glUniform3f(m_uniformColour, 1.0f, 1.0f, 1.0f);
-	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_SHORT, nullptr);
-
-	glActiveTexture(GL_TEXTURE0);
-
-	// draw the trees
-	for (auto& tree : m_trees) {
-		tree.draw();
-	}
+	drawTerrain();
+	drawTrees(m_uniformM);
 
 	m_shader.disable();
 
@@ -545,6 +629,16 @@ bool A5::keyInputEvent (
 		case GLFW_KEY_B:
 			if (press) {
 				m_useBumpMap = !m_useBumpMap;
+			}
+			break;
+
+		case GLFW_KEY_H:
+			if (press) {
+				m_renderDebugQuad = !m_renderDebugQuad;
+
+				if (m_renderDebugQuad) {
+					//renderDepthBuffer();
+				}
 			}
 			break;
 
@@ -830,6 +924,58 @@ void A5::createTerrain()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, terrainIndices.size() * sizeof(FaceData), terrainIndices.data());
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void A5::drawTerrain()
+{
+	// draw the terrain
+	glBindVertexArray(m_vaoTerrain);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_terrainTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_terrainBumpMap);
+
+	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_SHORT, nullptr);
+
+	glActiveTexture(GL_TEXTURE0);
+}
+
+void A5::drawTrees(GLint uniformM)
+{
+	// draw the trees
+	for (auto& tree : m_trees) {
+		tree.draw(uniformM);
+	}
+}
+
+void A5::renderDepthBuffer()
+{
+	float nearPlane = 1.0f, farPlane = 1000.0f;
+	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, nearPlane, farPlane);
+	glm::mat4 lightView = glm::lookAt(
+		m_lightPosition,
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f)
+	);
+	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+	m_depthShader.enable();
+
+	glUniformMatrix4fv(m_uniformDepthLightSpaceMatrix, 1, GL_FALSE, value_ptr(lightSpaceMatrix));
+
+	glViewport(0, 0, ShadowWidth, ShadowHeight);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_depthBuffer);
+	glClearColor(0.8f, 0.1f, 0.4f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	drawTerrain();
+	drawTrees(m_uniformDepthM);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	m_depthShader.disable();
+
+	glViewport(0, 0, m_windowWidth, m_windowHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void A5::setShowMouse(bool showMouse)

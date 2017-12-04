@@ -44,6 +44,11 @@ private:
 	void allocateTerrain();
 	void createTerrain();
 
+	void drawTerrain();
+	void drawTrees(GLint uniformM);
+
+	void renderDepthBuffer();
+
 	void setShowMouse(bool showMouse);
 	bool m_showMouse;
 
@@ -96,6 +101,19 @@ private:
 	GLuint m_vaoSkybox;
 	GLuint m_skyboxCubemap;
 	std::size_t m_skyboxIndexCount;
+
+	const std::size_t ShadowWidth = 1024;
+	const std::size_t ShadowHeight = 1024;
+	ShaderProgram m_depthShader;
+	GLint m_uniformDepthM;
+	GLint m_uniformDepthLightSpaceMatrix;
+
+	GLuint m_depthBuffer;
+	GLuint m_depthMap;
+
+	ShaderProgram m_debugQuadShader;
+	GLuint m_vaoDebugQuad;
+	bool m_renderDebugQuad;
 
 	std::vector<glm::vec3> m_terrainVertices;
 #if RENDER_DEBUG

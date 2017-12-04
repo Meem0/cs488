@@ -17,8 +17,6 @@ Tree::Tree()
 }
 
 void Tree::loadModel(const ShaderProgram& shader, const Mesh& mesh) {
-	m_uniformM = shader.getUniformLocation("M");
-
 	for (size_t i = 0; i < mesh.groupData.size(); ++i) {
 		// Create the texture
 		GLuint textureID = Util::loadTexture(Util::getAssetFilePath(mesh.groupData[i].diffuseMap.c_str()));
@@ -118,9 +116,9 @@ void Tree::setWorldPosition(const vec3& position)
 	m_modelMat = glm::translate(mat4(), position);
 }
 
-void Tree::draw()
+void Tree::draw(GLint uniformM)
 {
-	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(m_modelMat));
+	glUniformMatrix4fv(uniformM, 1, GL_FALSE, value_ptr(m_modelMat));
 
 	glDisable(GL_CULL_FACE);
 

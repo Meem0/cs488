@@ -248,6 +248,10 @@
     <ClInclude Include="Window.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\DebugQuad.frag" />
+    <None Include="Assets\DebugQuad.vert" />
+    <None Include="Assets\DepthShader.frag" />
+    <None Include="Assets\DepthShader.vert" />
     <None Include="Assets\FragmentShader.frag" />
     <None Include="Assets\SkyboxShader.frag" />
     <None Include="Assets\SkyboxShader.vert" />
