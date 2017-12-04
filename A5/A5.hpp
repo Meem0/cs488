@@ -76,7 +76,10 @@ private:
 	std::uint32_t m_terrainTileCount;
 	const static std::uint32_t MaxTiles = 1024;
 
-	float m_heightScaleFactor;
+	std::size_t m_octaves;
+	std::vector<float> m_heightScaleFactor;
+	std::vector<float> m_frequencyFactor;
+	int m_seed;
 
 	// Fields related to the shader and uniforms.
 	ShaderProgram m_shader;

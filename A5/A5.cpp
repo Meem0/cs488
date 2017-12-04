@@ -15,6 +15,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <chrono>
 #include <vector>
 
 using namespace glm;
@@ -91,11 +92,14 @@ A5::A5()
 	, m_mousePos(0, 0)
 	, m_showMouse(false)
 	, m_terrainTileCount(256)
-	, m_terrainWidth(512.0f)
+	, m_terrainWidth(1024.0f)
 	, m_wireframeMode(false)
 	, m_multisample(false)
 	, m_useBumpMap(false)
-	, m_heightScaleFactor(1.0f)
+	, m_octaves(3)
+	, m_heightScaleFactor{ 350.0f, 60.0f, 15.0f }
+	, m_frequencyFactor{ 0.066f, 0.28f, 0.5f }
+	, m_seed(20171111)
 	, m_movementSpeed(4.0f)
 	, m_lightIntensity(1.0f)
 	, m_lightPosition(-100.0f, 50.0f, 0)
@@ -316,7 +320,7 @@ void A5::guiLogic()
 		m_camera.setSpeed(m_movementSpeed);
 	}
 
-	if (ImGui::SliderFloat("Terrain width", &m_terrainWidth, 1.0f, 1024.0f, "%.3f", 4.0f)) {
+	if (ImGui::SliderFloat("Terrain width", &m_terrainWidth, 1.0f, 4096.0f, "%.3f", 4.0f)) {
 		createTerrain();
 	}
 	if (ImGui::SliderFloat("Tile count", &m_terrainTileCountSlider, 1.0f, 1024.0f, "%.0f", 2.0f)) {
@@ -325,8 +329,36 @@ void A5::guiLogic()
 		createTerrain();
 	}
 
-	if (ImGui::SliderFloat("Height scale", &m_heightScaleFactor, 0.1f, 10.0f, "%.3f", 1.5f)) {
-		createTerrain();
+	int octaves = static_cast<int>(m_octaves);
+	if (ImGui::SliderInt("Octaves", &octaves, 1, 5)) {
+		m_octaves = static_cast<size_t>(octaves);
+		m_heightScaleFactor.resize(m_octaves, 1.0f);
+		m_frequencyFactor.resize(m_octaves, 1.0f);
+	}
+
+	const static vector<float> maxHeights{ 1000.0f };
+	const static vector<float> maxFrequencies{ 10.0f };
+
+	for (size_t i = 0; i < m_octaves; ++i) {
+		char labelNum = static_cast<char>(i) + '0';
+
+		float height = m_heightScaleFactor[i];
+		string label = "Height scale  ";
+		label[13] = labelNum;
+		float maxHeight = i < maxHeights.size() ? maxHeights[i] : 100.0f;
+		if (ImGui::SliderFloat(label.c_str(), &height, 0, maxHeight, "%.3f", 1.5f)) {
+			m_heightScaleFactor[i] = height;
+			createTerrain();
+		}
+
+		float frequency = m_frequencyFactor[i];
+		string label2 = "Frequency  ";
+		label2[10] = labelNum;
+		float maxFrequency = i < maxFrequencies.size() ? maxFrequencies[i] : 100.0f;
+		if (ImGui::SliderFloat(label2.c_str(), &frequency, 0.001f, maxFrequency, "%.3f", 1.5f)) {
+			m_frequencyFactor[i] = frequency;
+			createTerrain();
+		}
 	}
 
 	ImGui::SliderFloat3("Light position", &m_lightPosition.x, -200.0f, 200.0f);
@@ -647,9 +679,17 @@ bool A5::keyInputEvent (
 			}
 			break;
 
-		case GLFW_KEY_G:
+		case GLFW_KEY_J:
 			if (press) {
 				m_useShadows = !m_useShadows;
+			}
+			break;
+
+		case GLFW_KEY_G:
+			if (press) {
+				chrono::high_resolution_clock c;
+				m_seed = static_cast<int>(c.now().time_since_epoch().count());
+				createTerrain();
 			}
 			break;
 
@@ -813,10 +853,23 @@ void A5::createTerrain()
 	assert(m_terrainTileCount <= MaxTiles);
 
 	FastNoise noise;
-	noise.SetSeed(20171111);
+	noise.SetSeed(m_seed);
 	noise.SetNoiseType(FastNoise::SimplexFractal);
 
-	createTerrainGeometry([noise](float x, float y) { return noise.GetNoise(x, y); });
+	auto heightFunction = [&](float x, float y) {
+		float height = 0;
+		for (size_t octave = 0; octave < m_octaves; ++octave) {
+			float degree = static_cast<float>(1 << octave);
+
+			float heightFactor = m_heightScaleFactor[octave] / degree;
+			float frequency = m_frequencyFactor[octave] * degree * m_terrainWidth;
+
+			height += heightFactor * noise.GetNoise(frequency * x, frequency * y);
+		}
+		return height;
+	};
+
+	createTerrainGeometry(heightFunction);
 
 	for (Tree& tree : m_trees) {
 		vec3 pos = tree.getWorldPosition();
@@ -843,9 +896,9 @@ void A5::createTerrainGeometry(function<float(float, float)> heightFunction)
 		float x = static_cast<float>(colDistanceTimes2) * tileWidth / 2.0f;
 		float z = static_cast<float>(rowDistanceTimes2) * tileWidth / 2.0f;
 
-		float noiseX = m_terrainWidth * (static_cast<float>(row) / static_cast<float>(n) - 0.5f);
-		float noiseY = m_terrainWidth * (static_cast<float>(col) / static_cast<float>(n) - 0.5f);
-		float y = m_heightScaleFactor * heightFunction(noiseX, noiseY);
+		float noiseX = static_cast<float>(row) / static_cast<float>(n) - 0.5f;
+		float noiseY = static_cast<float>(col) / static_cast<float>(n) - 0.5f;
+		float y = heightFunction(noiseX, noiseY);
 
 		m_terrainVertices[i] = vec3(x, y, z);
 	}
