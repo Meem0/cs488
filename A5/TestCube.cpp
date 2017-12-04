@@ -129,7 +129,7 @@ void TestCube::debugDraw()
 	glColor3f(0, 0, 1.0f);
 	glBegin(GL_LINES);
 
-	for (int i = 0; i < m_mesh.positions.size(); ++i) {
+	for (size_t i = 0; i < m_mesh.positions.size(); ++i) {
 		glm::vec3 p = m_mesh.positions[i];
 		glVertex3fv(&p.x);
 		glm::vec3 n = 0.1f * m_mesh.normals[i];

@@ -329,7 +329,7 @@ void A5::draw()
 		glColor3f(0, 0, 1.0f);
 		glBegin(GL_LINES);
 
-		for (int i = 0; i < m_terrainVertices.size(); ++i) {
+		for (size_t i = 0; i < m_terrainVertices.size(); ++i) {
 			glm::vec3 p = m_terrainVertices[i];
 			glVertex3fv(&p.x);
 			glm::vec3 n = m_terrainNormals[i];
@@ -722,8 +722,8 @@ void A5::createTerrain()
 		float x = static_cast<float>(colDistanceTimes2) * tileWidth / 2.0f;
 		float z = static_cast<float>(rowDistanceTimes2) * tileWidth / 2.0f;
 
-		int noiseX = static_cast<int>(static_cast<float>(MaxTiles) * static_cast<float>(row) / static_cast<float>(n));
-		int noiseY = static_cast<int>(static_cast<float>(MaxTiles) * static_cast<float>(col) / static_cast<float>(n));
+		float noiseX = static_cast<float>(MaxTiles) * static_cast<float>(row) / static_cast<float>(n);
+		float noiseY = static_cast<float>(MaxTiles) * static_cast<float>(col) / static_cast<float>(n);
 		float y = m_heightScaleFactor * noise.GetNoise(noiseX, noiseY);
 
 		m_terrainVertices[i] = vec3(x, y, z);
@@ -773,16 +773,17 @@ void A5::createTerrain()
 	}
 
 	const std::size_t terrainIndexCount = tilesIndexCount(m_terrainTileCount);
+	const unsigned short ns = static_cast<unsigned short>(n);
 
 	vector<FaceData> terrainIndices(terrainIndexCount / 3);
 	for (std::size_t tileIdx = 0; tileIdx < m_terrainTileCount * m_terrainTileCount; ++tileIdx) {
-		std::size_t row = tileIdx / m_terrainTileCount;
-		std::size_t col = tileIdx % m_terrainTileCount;
+		unsigned short row = static_cast<unsigned short>(tileIdx / m_terrainTileCount);
+		unsigned short col = static_cast<unsigned short>(tileIdx % m_terrainTileCount);
 
 		unsigned short a, b, c, d;
-		a = row * n + col;
+		a = row * ns + col;
 		b = a + 1;
-		c = b + n - 1;
+		c = b + ns - 1;
 		d = c + 1;
 
 		std::size_t idx = tileIdx * 2;

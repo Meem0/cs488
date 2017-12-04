@@ -482,7 +482,7 @@ void Window::init() {
 	glEnable(GL_DEPTH_CLAMP);
 
 	glClearDepth(1.0f);
-	glClearColor(0.3, 0.5, 0.7, 1.0);
+	glClearColor(0.3f, 0.5f, 0.7f, 1.0f);
 
 }
 
@@ -542,8 +542,8 @@ static void printGLInfo() {
 	GLint nExtensions;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &nExtensions);
 
-	for (GLuint i = 0; i < nExtensions; ++i) {
-		extension = glGetStringi(GL_EXTENSIONS, i);
+	for (GLint i = 0; i < nExtensions; ++i) {
+		extension = glGetStringi(GL_EXTENSIONS, static_cast<GLuint>(i));
 		if (extension) {
 			cout << extension << endl;
 		}

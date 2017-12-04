@@ -99,7 +99,7 @@ namespace Util {
 		glGenTextures(1, &textureID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-		for (int i = 0; i < texturePaths.size(); ++i) {
+		for (size_t i = 0; i < texturePaths.size(); ++i) {
 			if (!loadTextureHelper(texturePaths[i], GL_TEXTURE_CUBE_MAP_POSITIVE_X + i)) {
 				glDeleteTextures(1, &textureID);
 				return 0;
