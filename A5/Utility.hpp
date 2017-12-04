@@ -22,6 +22,8 @@ namespace Util {
 		std::vector<glm::vec3>& vTangents
 	);
 
+	float distanceSquared(glm::vec2 a, glm::vec2 b);
+
 	//std::string getAssetFilePath(const char* filename);
 	std::string getAssetFilePath(const std::string& filename);
 	void setAssetFilePathBase(const std::string& path);

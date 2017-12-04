@@ -55,8 +55,8 @@ namespace {
 
 		if (rowU != rowD || colL != colR) {
 			// squared distances to hypotenuse vertices
-			float dul = (pos.x - vul.x) * (pos.x - vul.x) + (pos.y - vul.z) * (pos.y - vul.z);
-			float ddr = (pos.x - vdr.x) * (pos.x - vdr.x) + (pos.y - vdr.z) * (pos.y - vdr.z);
+			float dul = Util::distanceSquared(pos, vec2(vul.x, vul.z));
+			float ddr = Util::distanceSquared(pos, vec2(vdr.x, vdr.z));
 
 			vec3 mid = (vur + vdl) / 2.0f;
 			vec3 vh = dul < ddr ? vul : vdr;
@@ -177,13 +177,30 @@ void A5::init()
  */
 void A5::appLogic()
 {
+	vec3 posBefore = m_camera.getPosition();
 	m_camera.update(m_deltaTime);
 
 	if (m_camera.get2dWalkMode()) {
 		vec3 pos = m_camera.getPosition();
-		pos.y = getTerrainHeight(m_terrainVertices, m_terrainTileCount, m_terrainWidth, vec2(pos.x, pos.z));
-		pos.y += 1.0f;
-		m_camera.moveTo(pos);
+		vec2 pos2(pos.x, pos.z);
+
+		bool collide = false;
+		for (const auto& collider : m_colliders) {
+			if (collider.collide(pos2, 0.5f)) {
+				collide = true;
+				break;
+			}
+		}
+
+		if (collide) {
+			m_camera.moveTo(posBefore);
+		}
+		else {
+			pos.y = getTerrainHeight(m_terrainVertices, m_terrainTileCount, m_terrainWidth, pos2);
+			pos.y += 1.0f;
+
+			m_camera.moveTo(pos);
+		}
 	}
 }
 
@@ -600,7 +617,7 @@ void A5::initGeom()
 		m_trees.back().loadModel(m_shader, treeMesh);
 		m_trees.back().setWorldPosition(pos);
 
-		m_colliders.emplace_back(vec2(pos.x, pos.z), 1.5f);
+		m_colliders.emplace_back(vec2(pos.x, pos.z), 2.0f);
 	}
 
 	CHECK_GL_ERRORS;

@@ -156,6 +156,11 @@ namespace Util {
 		}
 	}
 
+	float distanceSquared(glm::vec2 a, glm::vec2 b)
+	{
+		return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+	}
+
 	string assetFilePathBase;
 
 	string getAssetFilePath(const char* filename)
