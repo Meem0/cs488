@@ -15,6 +15,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <chrono>
 #include <vector>
 
@@ -740,18 +741,28 @@ void A5::initGeom()
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-
-	static const std::size_t TreeGridSideCount = 8;
-	const float TreeGridWidth = m_terrainWidth * 0.9f;
-	vec3 positions[TreeGridSideCount * TreeGridSideCount];
+	srand(m_seed);
+	static const std::size_t TreeGridSideCount = 48;
+	const float TreeGridWidth = m_terrainWidth * 0.95f;
+	vector<vec3> positions;
 	float gap = TreeGridWidth / static_cast<float>(TreeGridSideCount);
 	for (int r = 0; r < TreeGridSideCount; ++r) {
 		for (int c = 0; c < TreeGridSideCount; ++c) {
-			positions[r * TreeGridSideCount + c] = vec3(
+			vec3 position(
 				r * gap - TreeGridWidth / 2.0f + gap / 2.0f,
 				0.5f,
 				c * gap - TreeGridWidth / 2.0f + gap / 2.0f
 			);
+
+			float xoff = static_cast<float>(rand() % 70 + 15) / 100.0f;
+			float yoff = static_cast<float>(rand() % 70 + 15) / 100.0f;
+
+			position.x += xoff * gap;
+			position.z += yoff * gap;
+
+			if (rand() % 100 > 20) {
+				positions.push_back(position);
+			}
 		}
 	}
 
