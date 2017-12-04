@@ -115,10 +115,11 @@ namespace Util {
 		return textureID;
 	}
 
+	template <typename TFaceData>
 	void calculateTangents(
 		const vector<vec3>& positions,
 		const vector<vec2>& uvs,
-		const vector<FaceData>& faces,
+		const vector<TFaceData>& faces,
 		vector<vec3>& uTangents,
 		vector<vec3>& vTangents
 	) {
@@ -155,6 +156,22 @@ namespace Util {
 			vTangents[face.v3] = vTangent;
 		}
 	}
+
+	template void calculateTangents(
+		const vector<vec3>& positions,
+		const vector<vec2>& uvs,
+		const vector<FaceData>& faces,
+		vector<vec3>& uTangents,
+		vector<vec3>& vTangents
+	);
+
+	template void calculateTangents(
+		const vector<vec3>& positions,
+		const vector<vec2>& uvs,
+		const vector<FaceData32>& faces,
+		vector<vec3>& uTangents,
+		vector<vec3>& vTangents
+	);
 
 	float distanceSquared(glm::vec2 a, glm::vec2 b)
 	{

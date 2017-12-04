@@ -21,27 +21,27 @@ using namespace glm;
 using namespace std;
 
 namespace {
-	std::size_t tilesVertexCount(std::size_t tileCount)
+	uint32_t tilesVertexCount(uint32_t tileCount)
 	{
 		return (tileCount + 1) * (tileCount + 1);
 	}
 
-	std::size_t tilesIndexCount(std::size_t tileCount)
+	uint32_t tilesIndexCount(uint32_t tileCount)
 	{
 		return tileCount * tileCount * 2 * 3;
 	}
 
-	float getTerrainHeight(const vector<vec3>& terrainVertices, size_t numTiles, float terrainWidth, vec2 pos) {
+	float getTerrainHeight(const vector<vec3>& terrainVertices, uint32_t numTiles, float terrainWidth, vec2 pos) {
 		vec2 posPercent = (pos + terrainWidth / 2.0f) / terrainWidth;
 		posPercent = glm::clamp(posPercent, vec2(), vec2(1.0f, 1.0f));
 
 		vec2 posIdxHigh = glm::ceil(posPercent * static_cast<float>(numTiles));
 		vec2 posIdxLow = glm::floor(posPercent * static_cast<float>(numTiles));
 
-		size_t rowU = static_cast<size_t>(posIdxLow.y);
-		size_t rowD = static_cast<size_t>(posIdxHigh.y);
-		size_t colL = static_cast<size_t>(posIdxLow.x);
-		size_t colR = static_cast<size_t>(posIdxHigh.x);
+		uint32_t rowU = static_cast<uint32_t>(posIdxLow.y);
+		uint32_t rowD = static_cast<uint32_t>(posIdxHigh.y);
+		uint32_t colL = static_cast<uint32_t>(posIdxLow.x);
+		uint32_t colR = static_cast<uint32_t>(posIdxHigh.x);
 
 		// vertices of the current square
 		vec3 vul = terrainVertices[rowU * (numTiles + 1) + colL];
@@ -90,8 +90,8 @@ A5::A5()
 	: m_mouseButtonPressed{ false, false, false }
 	, m_mousePos(0, 0)
 	, m_showMouse(false)
-	, m_terrainTileCount(128)
-	, m_terrainWidth(128.0f)
+	, m_terrainTileCount(256)
+	, m_terrainWidth(512.0f)
 	, m_wireframeMode(false)
 	, m_multisample(false)
 	, m_useBumpMap(false)
@@ -362,7 +362,7 @@ void A5::draw()
 	}
 
 	// Set the background colour.
-	glClearColor(0.8f, 0.2f, 0.2f, 1.0f);
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 	if (m_useShadows) {
@@ -816,14 +816,14 @@ void A5::createTerrain()
 	noise.SetSeed(20171111);
 	noise.SetNoiseType(FastNoise::SimplexFractal);
 
-	const std::size_t terrainVertexCount = tilesVertexCount(m_terrainTileCount);
+	const uint32_t terrainVertexCount = tilesVertexCount(m_terrainTileCount);
 	m_terrainVertices.resize(terrainVertexCount);
 
-	const std::size_t n = m_terrainTileCount + 1;
+	const uint32_t n = m_terrainTileCount + 1;
 	float tileWidth = m_terrainWidth / static_cast<float>(m_terrainTileCount);
-	for (std::size_t i = 0; i < terrainVertexCount; ++i) {
-		std::size_t row = i / n;
-		std::size_t col = i % n;
+	for (uint32_t i = 0; i < terrainVertexCount; ++i) {
+		uint32_t row = i / n;
+		uint32_t col = i % n;
 
 		int centreIndexTimes2 = (n - 1);
 		int colDistanceTimes2 = col * 2 - centreIndexTimes2;
@@ -845,11 +845,11 @@ void A5::createTerrain()
 #else
 	vector<vec3> terrainNormals(terrainVertexCount);
 #endif
-	for (std::size_t i = 0; i < terrainVertexCount; ++i) {
-		std::size_t row = i / n;
-		std::size_t col = i % n;
+	for (uint32_t i = 0; i < terrainVertexCount; ++i) {
+		uint32_t row = i / n;
+		uint32_t col = i % n;
 
-		std::size_t row2, col2;
+		uint32_t row2, col2;
 		vec3 l, r, u, d, o;
 
 		o = m_terrainVertices[row * n + col];
@@ -877,26 +877,25 @@ void A5::createTerrain()
 	}
 
 	vector<vec2> terrainTexCoords(terrainVertexCount);
-	for (std::size_t i = 0; i < terrainVertexCount; ++i) {
+	for (uint32_t i = 0; i < terrainVertexCount; ++i) {
 		terrainTexCoords[i].s = m_terrainVertices[i].x;
 		terrainTexCoords[i].t = m_terrainVertices[i].z;
 	}
 
-	const std::size_t terrainIndexCount = tilesIndexCount(m_terrainTileCount);
-	const unsigned short ns = static_cast<unsigned short>(n);
+	const uint32_t terrainIndexCount = tilesIndexCount(m_terrainTileCount);
 
-	vector<FaceData> terrainIndices(terrainIndexCount / 3);
-	for (std::size_t tileIdx = 0; tileIdx < m_terrainTileCount * m_terrainTileCount; ++tileIdx) {
-		unsigned short row = static_cast<unsigned short>(tileIdx / m_terrainTileCount);
-		unsigned short col = static_cast<unsigned short>(tileIdx % m_terrainTileCount);
+	vector<FaceData32> terrainIndices(terrainIndexCount / 3);
+	for (uint32_t tileIdx = 0; tileIdx < m_terrainTileCount * m_terrainTileCount; ++tileIdx) {
+		uint32_t row = tileIdx / m_terrainTileCount;
+		uint32_t col = tileIdx % m_terrainTileCount;
 
-		unsigned short a, b, c, d;
-		a = row * ns + col;
+		uint32_t a, b, c, d;
+		a = row * n + col;
 		b = a + 1;
-		c = b + ns - 1;
+		c = b + n - 1;
 		d = c + 1;
 
-		std::size_t idx = tileIdx * 2;
+		uint32_t idx = tileIdx * 2;
 		terrainIndices[idx].v1 = a;
 		terrainIndices[idx].v2 = c;
 		terrainIndices[idx].v3 = b;
@@ -933,7 +932,7 @@ void A5::createTerrain()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_eboTerrain);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, terrainIndices.size() * sizeof(FaceData), terrainIndices.data());
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, terrainIndices.size() * sizeof(FaceData32), terrainIndices.data());
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
@@ -949,7 +948,7 @@ void A5::drawTerrain()
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, m_depthMap);
 
-	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_SHORT, nullptr);
+	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_INT, nullptr);
 
 	glActiveTexture(GL_TEXTURE0);
 }

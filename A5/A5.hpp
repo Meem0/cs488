@@ -69,8 +69,8 @@ private:
 
 	float m_terrainWidth;
 	float m_terrainTileCountSlider;
-	std::size_t m_terrainTileCount;
-	const static std::size_t MaxTiles = 1024;
+	std::uint32_t m_terrainTileCount;
+	const static std::uint32_t MaxTiles = 1024;
 
 	float m_heightScaleFactor;
 

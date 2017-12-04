@@ -1,14 +1,20 @@
 #pragma once
 
 #include <glm/glm.hpp>
+
+#include <cstdint>
 #include <vector>
 #include <string>
 
-struct FaceData {
-	unsigned short v1;
-	unsigned short v2;
-	unsigned short v3;
+template <typename T>
+struct FaceDataT {
+	T v1;
+	T v2;
+	T v3;
 };
+
+typedef FaceDataT<std::uint16_t> FaceData;
+typedef FaceDataT<std::uint32_t> FaceData32;
 
 struct MaterialData {
 	std::size_t startIndex;
