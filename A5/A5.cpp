@@ -99,6 +99,7 @@ A5::A5()
 	, m_movementSpeed(4.0f)
 	, m_lightIntensity(1.0f)
 	, m_lightPosition(-100.0f, 50.0f, 0)
+	, m_useShadows(false)
 	, m_renderDebugQuad(false)
 	, m_normalDebug(false)
 {
@@ -130,16 +131,20 @@ void A5::init()
 	m_uniformV = m_shader.getUniformLocation("V");
 	m_uniformM = m_shader.getUniformLocation("M");
 	m_uniformLightPosition = m_shader.getUniformLocation("lightPosition");
+	m_uniformLightSpaceMatrix = m_shader.getUniformLocation("lightSpaceMatrix");
 	m_uniformColour = m_shader.getUniformLocation("colour");
 	m_uniformLightColour = m_shader.getUniformLocation("lightColour");
 	m_uniformAmbientIntensity = m_shader.getUniformLocation("ambientIntensity");
 	m_uniformUseBumpMap = m_shader.getUniformLocation("useBumpMap");
+	m_uniformUseShadows = m_shader.getUniformLocation("useShadows");
 
 	m_shader.enable();
 	GLint textureUniform = m_shader.getUniformLocation("tex");
 	glUniform1i(textureUniform, 0);
 	textureUniform = m_shader.getUniformLocation("bump");
 	glUniform1i(textureUniform, 1);
+	textureUniform = m_shader.getUniformLocation("shadow");
+	glUniform1i(textureUniform, 2);
 	m_shader.disable();
 
 	m_skyboxShader.generateProgramObject();
@@ -341,8 +346,6 @@ void A5::guiLogic()
 void A5::draw()
 {
 	if (m_renderDebugQuad) {
-		glEnable(GL_DEPTH_TEST);
-
 		renderDepthBuffer();
 
 		m_debugQuadShader.enable();
@@ -359,8 +362,12 @@ void A5::draw()
 	}
 
 	// Set the background colour.
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+	glClearColor(0.8f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	if (m_useShadows) {
+		renderDepthBuffer();
+	}
 
 	// Create a global transformation for the model (centre it).
 	mat4 M;
@@ -383,9 +390,11 @@ void A5::draw()
 	glUniformMatrix4fv(m_uniformV, 1, GL_FALSE, value_ptr(V));
 	glUniformMatrix4fv(m_uniformM, 1, GL_FALSE, value_ptr(M));
 	glUniform4fv(m_uniformLightPosition, 1, value_ptr(lightPosition4));
+	glUniformMatrix4fv(m_uniformLightSpaceMatrix, 1, GL_FALSE, value_ptr(calculateLightSpaceMatrix()));
 	glUniform3fv(m_uniformLightColour, 1, value_ptr(lightColour));
 	glUniform3fv(m_uniformAmbientIntensity, 1, value_ptr(m_ambientIntensity));
 	glUniform1i(m_uniformUseBumpMap, m_useBumpMap);
+	glUniform1i(m_uniformUseShadows, m_useShadows);
 	glUniform3f(m_uniformColour, 1.0f, 1.0f, 1.0f);
 
 	if (m_wireframeMode) {
@@ -635,10 +644,12 @@ bool A5::keyInputEvent (
 		case GLFW_KEY_H:
 			if (press) {
 				m_renderDebugQuad = !m_renderDebugQuad;
+			}
+			break;
 
-				if (m_renderDebugQuad) {
-					//renderDepthBuffer();
-				}
+		case GLFW_KEY_G:
+			if (press) {
+				m_useShadows = !m_useShadows;
 			}
 			break;
 
@@ -935,6 +946,8 @@ void A5::drawTerrain()
 	glBindTexture(GL_TEXTURE_2D, m_terrainTexture);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_terrainBumpMap);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, m_depthMap);
 
 	glDrawElements(GL_TRIANGLES, tilesIndexCount(m_terrainTileCount), GL_UNSIGNED_SHORT, nullptr);
 
@@ -943,13 +956,17 @@ void A5::drawTerrain()
 
 void A5::drawTrees(GLint uniformM)
 {
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, m_depthMap);
+	glActiveTexture(GL_TEXTURE0);
+
 	// draw the trees
 	for (auto& tree : m_trees) {
 		tree.draw(uniformM);
 	}
 }
 
-void A5::renderDepthBuffer()
+glm::mat4 A5::calculateLightSpaceMatrix() const
 {
 	float nearPlane = 1.0f, farPlane = 1000.0f;
 	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, nearPlane, farPlane);
@@ -958,7 +975,14 @@ void A5::renderDepthBuffer()
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 1.0f, 0.0f)
 	);
-	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+	return lightProjection * lightView;
+}
+
+void A5::renderDepthBuffer()
+{
+	glm::mat4 lightSpaceMatrix = calculateLightSpaceMatrix();
+
+	glEnable(GL_DEPTH_TEST);
 
 	m_depthShader.enable();
 
@@ -966,8 +990,7 @@ void A5::renderDepthBuffer()
 
 	glViewport(0, 0, ShadowWidth, ShadowHeight);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_depthBuffer);
-	glClearColor(0.8f, 0.1f, 0.4f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	drawTerrain();
 	drawTrees(m_uniformDepthM);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -975,7 +998,6 @@ void A5::renderDepthBuffer()
 	m_depthShader.disable();
 
 	glViewport(0, 0, m_windowWidth, m_windowHeight);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void A5::setShowMouse(bool showMouse)

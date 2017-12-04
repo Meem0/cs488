@@ -3,6 +3,7 @@
 uniform mat4 P;
 uniform mat4 V;
 uniform mat4 M;
+uniform mat4 lightSpaceMatrix;
 uniform vec4 lightPosition;
 uniform bool useBumpMap;
 
@@ -16,6 +17,7 @@ out vec3 lightDirectionTang;
 out vec3 normalView;
 out vec3 lightDirectionView;
 out vec2 fragTexCoord;
+out vec4 fragPosLightSpace;
 
 void main() {
 	gl_Position = P * V * M * vec4(position, 1.0);
@@ -45,4 +47,7 @@ void main() {
 	}
 
 	fragTexCoord = texCoord;
+
+	vec4 vertexWorldPos = M * vec4(position, 1.0);
+    fragPosLightSpace = lightSpaceMatrix * vertexWorldPos;
 }

@@ -47,6 +47,7 @@ private:
 	void drawTerrain();
 	void drawTrees(GLint uniformM);
 
+	glm::mat4 calculateLightSpaceMatrix() const;
 	void renderDepthBuffer();
 
 	void setShowMouse(bool showMouse);
@@ -80,9 +81,11 @@ private:
 	GLint m_uniformM; // Uniform location for Model matrix.
 	GLint m_uniformColour;
 	GLint m_uniformLightPosition;
+	GLint m_uniformLightSpaceMatrix;
 	GLint m_uniformLightColour;
 	GLint m_uniformAmbientIntensity;
 	GLint m_uniformUseBumpMap;
+	GLint m_uniformUseShadows;
 
 	GLuint m_vaoTerrain; // Vertex Array Object
 	GLuint m_vboTerrain; // Vertex Buffer Object
@@ -110,6 +113,7 @@ private:
 
 	GLuint m_depthBuffer;
 	GLuint m_depthMap;
+	bool m_useShadows;
 
 	ShaderProgram m_debugQuadShader;
 	GLuint m_vaoDebugQuad;
