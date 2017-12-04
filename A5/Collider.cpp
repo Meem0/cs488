@@ -59,3 +59,13 @@ bool Collider::collide(glm::vec2 position, float radius) const
 
 	return distance < (minDistance * minDistance);
 }
+
+glm::vec2 Collider::getPosition() const
+{
+	return m_position;
+}
+
+float Collider::getRadius() const
+{
+	return m_radius;
+}

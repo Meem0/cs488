@@ -14,6 +14,7 @@
 #include <imgui/imgui.h>
 
 #include <cassert>
+#include <cmath>
 #include <vector>
 
 using namespace glm;
@@ -183,24 +184,28 @@ void A5::appLogic()
 	if (m_camera.get2dWalkMode()) {
 		vec3 pos = m_camera.getPosition();
 		vec2 pos2(pos.x, pos.z);
+		float radius = 0.5f;
 
-		bool collide = false;
+		const Collider* collided = nullptr;
 		for (const auto& collider : m_colliders) {
-			if (collider.collide(pos2, 0.5f)) {
-				collide = true;
+			if (collider.collide(pos2, radius)) {
+				collided = &collider;
 				break;
 			}
 		}
 
-		if (collide) {
-			m_camera.moveTo(posBefore);
+		if (collided != nullptr) {
+			vec2 v = pos2 - collided->getPosition();
+			vec2 vn = normalize(v);
+			vec2 midPos = collided->getPosition() + normalize(v) * (radius + collided->getRadius() + 0.01f);
+			pos.x = midPos.x;
+			pos.z = midPos.y;
 		}
-		else {
-			pos.y = getTerrainHeight(m_terrainVertices, m_terrainTileCount, m_terrainWidth, pos2);
-			pos.y += 1.0f;
 
-			m_camera.moveTo(pos);
-		}
+		pos.y = getTerrainHeight(m_terrainVertices, m_terrainTileCount, m_terrainWidth, vec2(pos.x, pos.z));
+		pos.y += 1.0f;
+
+		m_camera.moveTo(pos);
 	}
 }
 
