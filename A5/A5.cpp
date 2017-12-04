@@ -843,8 +843,8 @@ void A5::createTerrainGeometry(function<float(float, float)> heightFunction)
 		float x = static_cast<float>(colDistanceTimes2) * tileWidth / 2.0f;
 		float z = static_cast<float>(rowDistanceTimes2) * tileWidth / 2.0f;
 
-		float noiseX = static_cast<float>(MaxTiles) * static_cast<float>(row) / static_cast<float>(n);
-		float noiseY = static_cast<float>(MaxTiles) * static_cast<float>(col) / static_cast<float>(n);
+		float noiseX = m_terrainWidth * (static_cast<float>(row) / static_cast<float>(n) - 0.5f);
+		float noiseY = m_terrainWidth * (static_cast<float>(col) / static_cast<float>(n) - 0.5f);
 		float y = m_heightScaleFactor * heightFunction(noiseX, noiseY);
 
 		m_terrainVertices[i] = vec3(x, y, z);
